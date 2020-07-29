@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+/.vs
+/out
+/.vscode
+/_ReSharper.Caches
+/CMakeSettings.json
+
+bin/

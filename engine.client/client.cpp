@@ -7,7 +7,7 @@
 #include "camera.h"
 #include "meshrenderer.h"
 #include "flycamera.h"
-#include "input.h"
+#include "input/input.h"
 
 using namespace Game::Client;
 using namespace Engine::Graphics;
@@ -21,7 +21,8 @@ void Application::Init()
 	AnsiString name = "PR210 Engine";
 	window.Init(name, 1280, 720);
 	window.Show();
-	if (!D3D11Renderer::GetInstance().Init(window))
+	Renderer::CreateInstance(new D3D11Renderer());
+	if (!Renderer::GetInstancePtr()->Init(window))
 	{
 		return;
 	}
@@ -32,9 +33,9 @@ void Application::Init()
 		Camera* camComponent = gameObjects[0]->AddComponent<Camera>();
 		camComponent->SetFov(static_cast<real>(75.0));
 		camComponent->SetPlanes(static_cast<real>(0.001), static_cast<real>(10000.0));
-		D3D11Renderer::GetInstance().SetActiveCamera(camComponent);
+		Renderer::GetInstancePtr()->SetActiveCamera(camComponent);
 		gameObjects[0]->AddComponent<FlyCamera>();
-		gameObjects[0]->transform->position.z = 3.0;
+		gameObjects[0]->transform->position.z = static_cast<real>(3.0);
 		
 	}
 	{
@@ -74,14 +75,14 @@ void Application::Run()
 	{
 		
 		//RENDER
-		D3D11Renderer::GetInstance().BeginScene();
+		Renderer::GetInstancePtr()->BeginScene();
 
 		for (GameObject*& obj : gameObjects)
 		{
-			D3D11Renderer::GetInstance().Render(obj);
+			D3D11Renderer::GetInstancePtr()->Render(obj);
 		}
 
-		D3D11Renderer::GetInstance().EndScene();
+		Renderer::GetInstancePtr()->EndScene();
 		if (!window.MessagePump())
 		{
 			this->appState = AppState::Stopped;
@@ -97,7 +98,8 @@ void Application::Run()
 		}
 
 		Time::Update();
-		Input::Update();
+		if(window.IsFocused())
+			Input::Update();
 		gameObjects[1]->transform->scale = Vec3::UnitScale * (Time::sinTime * static_cast<real>(0.25) + static_cast<real>(1.0));
 		gameObjects[1]->transform->rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(30.0), Vec3::UnitY * static_cast<real>(Time::sinTime) - Vec3::UnitX);
 	}
@@ -105,5 +107,5 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-	D3D11Renderer::GetInstance().Shutdown();
+	Renderer::GetInstancePtr()->Shutdown();
 }

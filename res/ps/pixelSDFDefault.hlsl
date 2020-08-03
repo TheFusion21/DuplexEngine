@@ -2,12 +2,7 @@
 
 Texture2D g_texture;
 
-SamplerState textureSampler
-{
-    Filter = MIN_MAG_MIP_POINT;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
+SamplerState textureSampler;
 float threshold = 1.0f/8.f;
 float bias = 0.01f;
 

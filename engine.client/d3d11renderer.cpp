@@ -20,7 +20,6 @@ using namespace Engine::Components;
 using namespace Engine::Graphics;
 using namespace Engine::Core;
 
-GE_DEFINE_SINGLETON(D3D11Renderer)
 
 bool D3D11Renderer::Init(AppWindow& window)
 {
@@ -200,8 +199,7 @@ bool D3D11Renderer::Init(AppWindow& window)
 	samplerDesc.MaxLOD = 0;
 	samplerDesc.MaxAnisotropy = 1;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
-	HRESULT t = device->CreateSamplerState(&samplerDesc, &sampler);
-	if (FAILED(t))
+	if (FAILED(device->CreateSamplerState(&samplerDesc, &sampler)))
 	{
 		MessageBoxA(NULL, "Could not create sampler state", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
@@ -686,14 +684,14 @@ GraphicsBufferPtr D3D11Renderer::CreateTexture2D(BufferType type, DXGI_FORMAT fo
 	return reinterpret_cast<GraphicsBufferPtr>(tex2D);
 }
 
-ID3D11ShaderResourceView* Engine::Graphics::D3D11Renderer::CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
+ShaderResourcePtr Engine::Graphics::D3D11Renderer::CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
 {
 	ID3D11ShaderResourceView* view = nullptr;
 	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Resource*>(resource), desc, &view)))
 	{
 		return nullptr;
 	}
-	return view;
+	return reinterpret_cast<ShaderResourcePtr>(view);
 }
 
 /*void D3D11Renderer::AddDirectionalLight(DirectionalLight& dirLight)

@@ -1,5 +1,5 @@
 #include "flycamera.h"
-#include "input.h"
+#include "input/input.h"
 #include "time.h"
 using namespace Engine::Components;
 using namespace Engine::Math;

@@ -21,5 +21,8 @@ typedef double real;
 #else
 typedef float real;
 #endif
+typedef int BOOL;
 
 typedef int* GraphicsBufferPtr;
+typedef int* ShaderResourcePtr;
+typedef int* IntPtr;

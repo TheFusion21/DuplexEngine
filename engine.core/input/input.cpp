@@ -10,6 +10,7 @@ Input::KeyState* Input::keyStates;
 
 Engine::Math::Vec2 Input::_mousePosition = Engine::Math::Vec2::Zero;
 const Engine::Math::Vec2& Input::mousePosition = Input::_mousePosition;
+
 void Input::Init()
 {
 	keyStates = new KeyState[0xFF];

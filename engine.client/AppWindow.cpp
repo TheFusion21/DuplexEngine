@@ -29,8 +29,22 @@ LRESULT WINAPI WinProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_SIZE:
 		if(app->isInit)app->Resize();
+		break;
 	case WM_WINDOWPOSCHANGED:
 		if (app->isInit)app->ResizeOnFullscreenToggle();
+		break;
+	case WM_SETFOCUS:
+		app->SetFocus(true);
+		break;
+	case WM_KILLFOCUS:
+		app->SetFocus(false);
+			break;
+	case WM_ACTIVATE:
+		if (LOWORD(wParam) == WA_INACTIVE)
+			app->SetFocus(false);
+		else
+			app->SetFocus(true);
+		break;
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -106,12 +120,12 @@ void AppWindow::Minimize()
 
 bool AppWindow::Resize()
 {
-	return D3D11Renderer::GetInstance().Resize(*this);
+	return Renderer::GetInstancePtr()->Resize(*this);
 }
 
 void Engine::Core::AppWindow::ResizeOnFullscreenToggle()
 {
-	if (D3D11Renderer::GetInstance().CheckForFullscreen())
+	if (Renderer::GetInstancePtr()->CheckForFullscreen())
 	{
 		Resize();
 	}
@@ -141,6 +155,16 @@ bool Engine::Core::AppWindow::GetClientSize(ui32& width, ui32& height)
 		return true;
 	}
 	return false;
+}
+
+bool Engine::Core::AppWindow::IsFocused()
+{
+	return hasFocus;
+}
+
+void Engine::Core::AppWindow::SetFocus(bool focus)
+{
+	hasFocus = focus;
 }
 
 ui64 Engine::Core::AppWindow::GetHandle()

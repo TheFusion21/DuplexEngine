@@ -9,8 +9,7 @@ include(compiler.cmake)
 
 # Include sub-projects.
 add_subdirectory ("engine.shared")
-add_subdirectory ("engine.shared/utils")
-add_subdirectory ("engine.shared/math")
-add_subdirectory ("engine.shared/ecs")
+add_subdirectory ("engine.core")
 add_subdirectory ("engine.client")
+
 

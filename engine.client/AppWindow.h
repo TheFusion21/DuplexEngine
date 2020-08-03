@@ -11,6 +11,7 @@ namespace Engine::Core
 	{
 	private:
 		HWND hwnd = NULL;
+		bool hasFocus = false;
 	public:
 		bool isInit = false;
 		void Init(AnsiString name, int width, int height);
@@ -22,6 +23,8 @@ namespace Engine::Core
 		void ResizeOnFullscreenToggle();
 		bool MessagePump();
 		bool GetClientSize(ui32&width, ui32& height);
+		bool IsFocused();
+		void SetFocus(bool focus);
 		ui64 GetHandle();
 	};
 }

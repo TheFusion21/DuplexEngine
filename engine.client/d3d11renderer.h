@@ -4,19 +4,14 @@
 #include <d3d11.h>
 #include <vector>
 // INTERNAL INCLUDES
-#include "math/types.h"
-#include "appwindow.h"
 #include "utils/singleton.h"
 #include "camera.h"
-#include "gameobject.h"
-#include "directionallight.h"
-#include "pointlight.h"
+#include "renderer.h"
 
 namespace Engine::Graphics
 {
-	class D3D11Renderer
+	class D3D11Renderer : public Renderer
 	{
-		GE_DECLARE_SINGLETON(D3D11Renderer)
 	private:
 		bool vsyncEnable = false;
 		bool wireframe = false;
@@ -53,19 +48,6 @@ namespace Engine::Graphics
 		//std::vector<Engine::Components::PointLight*> pointLights;
 
 	public:
-		enum class BufferType
-		{
-			Index,
-			Vertex,
-			Constant,
-			DepthStencil,
-			ShaderResource,
-		};
-		enum class UsageType
-		{
-			Default,
-			Dynamic
-		};
 		/// <summary>
 		/// 
 		/// </summary>
@@ -96,7 +78,6 @@ namespace Engine::Graphics
 		/// Release and clear/delete previously created pointers and exit fullscreen if required
 		/// </summary>
 		void Shutdown();
-
 		//void RenderObject(Engine::Math::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
 		void Render(const GameObject* object);
 		/// <summary>
@@ -118,7 +99,7 @@ namespace Engine::Graphics
 		
 		GraphicsBufferPtr CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage = UsageType::Default);
 
-		ID3D11ShaderResourceView* CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);
+		ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);
 
 		//void AddDirectionalLight(Engine::Components::DirectionalLight& dirLight);
 		//void AddPointLight(Engine::Components::PointLight& pointLight);

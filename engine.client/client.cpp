@@ -3,6 +3,7 @@
 #include "client.h"
 #include "math/types.h"
 #include "d3d11renderer.h"
+#include "vulkanrenderer.h"
 #include "time.h"
 #include "camera.h"
 #include "meshrenderer.h"
@@ -21,8 +22,10 @@ void Application::Init()
 	AnsiString name = "PR210 Engine";
 	window.Init(name, 1280, 720);
 	window.Show();
-	Renderer::CreateInstance(new D3D11Renderer());
-	if (!Renderer::GetInstancePtr()->Init(window))
+	Renderer::CreateInstance(new VulkanRenderer());
+	ui32 width, height;
+	window.GetClientSize(width, height);
+	if (!Renderer::GetInstancePtr()->Init(window.GetInstance(), window.GetHandle(), width, height))
 	{
 		return;
 	}
@@ -33,7 +36,6 @@ void Application::Init()
 		Camera* camComponent = gameObjects[0]->AddComponent<Camera>();
 		camComponent->SetFov(static_cast<real>(75.0));
 		camComponent->SetPlanes(static_cast<real>(0.001), static_cast<real>(10000.0));
-		Renderer::GetInstancePtr()->SetActiveCamera(camComponent);
 		gameObjects[0]->AddComponent<FlyCamera>();
 		gameObjects[0]->transform->position.z = static_cast<real>(3.0);
 		
@@ -73,7 +75,7 @@ void Application::Run()
 {
 	while(this->appState == AppState::Running)
 	{
-		
+		Renderer::GetInstancePtr()->SetActiveCamera(gameObjects[0]->transform->position, gameObjects[0]->GetComponent<Camera>()->GetViewProjMatrix());
 		//RENDER
 		Renderer::GetInstancePtr()->BeginScene();
 

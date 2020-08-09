@@ -13,6 +13,8 @@ ComponentType Camera::baseType = ComponentType::Camera;
 Camera::Camera(GameObject* attach) : Component(attach, baseType)
 {
 	this->viewProjMatrix = Mat4x4::Identity;
+	if (Camera::activeCamera == nullptr)
+		Camera::activeCamera = this;
 }
 
 void Camera::Update()

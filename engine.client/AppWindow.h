@@ -11,6 +11,7 @@ namespace Engine::Core
 	{
 	private:
 		HWND hwnd = NULL;
+		HINSTANCE instance;
 		bool hasFocus = false;
 	public:
 		bool isInit = false;
@@ -26,5 +27,6 @@ namespace Engine::Core
 		bool IsFocused();
 		void SetFocus(bool focus);
 		ui64 GetHandle();
+		ui64 GetInstance();
 	};
 }

@@ -32,8 +32,10 @@ target_sources(
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")
 
 target_link_libraries(${TARGET_NAME}
-    engine.shared
+    driver.d3d
+    driver.vulkan
 )
 target_include_directories(${TARGET_NAME} PUBLIC
-	"${CMAKE_SOURCE_DIR}/engine.shared"
+	"${CMAKE_SOURCE_DIR}/driver.d3d"
+	"${CMAKE_SOURCE_DIR}/driver.vulkan"
 )

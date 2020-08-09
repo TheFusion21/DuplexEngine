@@ -48,7 +48,9 @@ namespace Engine::Utils
 	private:
 		Time() {}
 		static real _deltaTime;
+		static real _unscaledDeltaTime;
 		static real _time;
+		static real _unscaledTime;
 		static real _sinTime;
 		static Timer deltaTimer;
 	public:
@@ -56,8 +58,13 @@ namespace Engine::Utils
 		/// Read only deltaTime for counter or animation or shit
 		/// </summary>
 		static const real& deltaTime;
+		static const real& unscaledDeltaTime;
 		static const real& time;
+		static const real& unscaledTime;
 		static const real& sinTime;
+		static real maxDeltaTime;
+		static real fixedDeltaTime;
+		static real timeScale;
 		/// <summary>
 		/// Start time measurement
 		/// </summary>

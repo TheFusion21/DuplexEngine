@@ -56,7 +56,7 @@ void AppWindow::Init(AnsiString name, int width, int height)
 	WNDCLASSEX wc = {};
 	//Let windows know which wnd class type we use
 	wc.cbSize = sizeof(wc);
-	wc.hInstance = GetModuleHandleA(NULL);
+	instance = wc.hInstance = GetModuleHandleA(NULL);
 	//Enable redraw for vertical and horizontal size change
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	//Set the icon for the application
@@ -120,7 +120,9 @@ void AppWindow::Minimize()
 
 bool AppWindow::Resize()
 {
-	return Renderer::GetInstancePtr()->Resize(*this);
+	ui32 width, height;
+	GetClientSize(width, height);
+	return Renderer::GetInstancePtr()->Resize(width, height);
 }
 
 void Engine::Core::AppWindow::ResizeOnFullscreenToggle()
@@ -170,4 +172,9 @@ void Engine::Core::AppWindow::SetFocus(bool focus)
 ui64 Engine::Core::AppWindow::GetHandle()
 {
 	return reinterpret_cast<ui64>(hwnd);
+}
+
+ui64 Engine::Core::AppWindow::GetInstance()
+{
+	return reinterpret_cast<ui64>(instance);
 }

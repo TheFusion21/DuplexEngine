@@ -7,16 +7,16 @@
 
 namespace Engine::Math
 {
-	constexpr real PI = static_cast<real>(3.14159265359);
+	constexpr real PI = static_cast<real>(3.1415926535897932384626433832795);
 	constexpr real PI_2 = PI / static_cast<real>(2.0);
 	
 	constexpr real AngleToRad()
 	{
-		return PI / static_cast<real>(180.0);
+		return static_cast<real>(0.01745329251994329576923690768489);
 	}
 	constexpr real AngleToDeg()
 	{
-		return static_cast<real>(180.0) / PI;
+		return static_cast<real>(57.295779513082320876798154814105);
 	}
 
 	template<typename T>
@@ -34,5 +34,10 @@ namespace Engine::Math
 	{
 		assert(min <= max);
 		return Max(Min(val, max), min);
+	}
+	template<typename T>
+	static constexpr T Lerp(const T& a, const T& b, const T& t)
+	{
+		return a + t * (b - a);
 	}
 }

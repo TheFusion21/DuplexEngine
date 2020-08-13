@@ -228,7 +228,7 @@ void Engine::Graphics::VulkanRenderer::EndScene()
 {
 }
 
-void Engine::Graphics::VulkanRenderer::Render(const GameObject* object)
+void Engine::Graphics::VulkanRenderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat)
 {
 }
 

@@ -5,7 +5,7 @@
 
 #include "gameobject.h"
 #include "math/types.h"
-
+#include "../engine.core/graphics/material.h"
 namespace Engine::Graphics
 {
 	class Renderer
@@ -55,7 +55,7 @@ namespace Engine::Graphics
 
 		virtual void EndScene() = 0;
 
-		virtual void Render(const GameObject* object) = 0;
+		virtual void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat) = 0;
 
 		virtual void Shutdown() = 0;
 

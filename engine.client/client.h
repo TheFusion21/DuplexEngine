@@ -3,9 +3,9 @@
 // EXTERNAL INCLUDES
 // INTERNAL INCLUDES
 #include "appwindow.h"
-#include "gameobject.h"
-#include "mesh.h"
-
+#include "ecs/coordinator.h"
+#include "ecs/systems/camerasystem.h"
+#include "ecs/systems/meshsystem.h"
 namespace Game::Client
 {
 	class Application
@@ -19,8 +19,10 @@ namespace Game::Client
 			Stopped
 		} appState = AppState::Started;
 
-		std::vector<GameObject*> gameObjects;
-
+		Engine::ECS::Coordinator coordinator;
+		std::shared_ptr<Engine::ECS::CameraSystem> camSystem;
+		std::shared_ptr<Engine::ECS::MeshSystem> meshSystem;
+		
 	public:
 		void Init();
 		void Run();

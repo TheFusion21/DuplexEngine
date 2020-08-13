@@ -16,8 +16,28 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/bsdfmaterial.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/component.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/transform.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/camera.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/meshrenderer.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/componentarray.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/componentmanager.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/entities/entity.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/entities/entitymanager.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/system.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/systemmanager.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/camerasystem.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/meshsystem.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/coordinator.h"
+
 
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/input/input.cpp"
@@ -26,6 +46,8 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.cpp"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/component.cpp"
 )
 
 # set additional target properties

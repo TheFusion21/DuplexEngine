@@ -1,7 +1,6 @@
 ﻿// EXTERNAL INCLUDES
 // INTERNAL INCLUDES
 #include "client.h"
-
 int main(int argc, char** argv)
 {
 	Game::Client::Application app { };
@@ -9,6 +8,7 @@ int main(int argc, char** argv)
 	app.Init();
 	app.Run();
 	app.Shutdown();
+
 	
 	return 0;
 }

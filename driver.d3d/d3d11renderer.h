@@ -77,7 +77,7 @@ namespace Engine::Graphics
 		/// </summary>
 		void Shutdown();
 		//void RenderObject(Engine::Math::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
-		void Render(const GameObject* object);
+		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat);
 		/// <summary>
 		/// Assign a camera to be used for rendering
 		/// </summary>

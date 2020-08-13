@@ -12,7 +12,6 @@
 #include "vertex.h"
 #include "transform.h"
 #include "shadercb.h"
-
 using namespace Engine::Math;
 using namespace Engine::Utils;
 using namespace Engine::Components;
@@ -482,7 +481,7 @@ void D3D11Renderer::Shutdown()
 	SAFERELEASE(pixelShader);
 }
 
-void D3D11Renderer::Render(const GameObject* object)
+void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat)
 {
 	//INPUT ASSEMBLER STAGE
 	//MeshRenderer* renderer = object->GetComponent<MeshRenderer>();
@@ -491,87 +490,108 @@ void D3D11Renderer::Render(const GameObject* object)
 	//if (renderer->vertexBuffer == nullptr || renderer->indexBuffer == nullptr)
 	//	return;
 	//
-	//ui32 stride = sizeof(Vertex);
-	//ui32 offset = 0;
-	////Generate model Matrix from Position/Translation Rotation Scale -> TRS
-	//Mat4x4 modelMat = Mat4x4::FromTranslation(object->transform->position) * Mat4x4::FromOrientation(object->transform->rotation) * Mat4x4::FromScale(object->transform->scale);
-	//
-	////Map the contents of the transformBuffer in CPU memory to be accessed by CPU
-	//D3D11_MAPPED_SUBRESOURCE modelResource = {};
-	//if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &modelResource)))
-	//{
-	//	MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-	//	return;
-	//}
-	////Convert mapped data to desired type
-	//modelConstant* dataMat = reinterpret_cast<modelConstant*>(modelResource.pData);
-	////Assign new data to be uploaded
-	//if (dataMat)
-	//{
-	//	dataMat->world = modelMat;
-	//	dataMat->m = renderer->mat;
-	//	dataMat->m.roughness = (1.f - Clamp(renderer->mat.roughness, 0.001f, 0.99f)) * 32.f;
-	//}
-	//
-	////Unmap to confirm upload and discard old data
-	//context->Unmap(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0);
-	//
-	//
-	////Bind the vertex data that describes the object we want to render
-	//context->IASetVertexBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&renderer->vertexBuffer), &stride, &offset);
-	////Bind the index data that describes the faces of the object we want to render
-	//context->IASetIndexBuffer(reinterpret_cast<ID3D11Buffer*>(renderer->indexBuffer), DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
-	////The the assembler what type of data he will be working with
-	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	////Tell the assembler how the vertex shader inputs look like
-	//context->IASetInputLayout(vertexLayout);
-	//
-	////VERTEX SHADER STAGE
-	////Bind the transformation for rendering this object
-	//context->VSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
-	////Bind the camera transformation for rendering this object
-	//context->VSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
-	//context->VSSetShader(vertexShader, nullptr, 0);
-	//
-	////PIXEL SHADER STAGE
-	////Bind the transformation for rendering this object
-	//context->PSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
-	////Bind the camera transformation for rendering this object
-	//context->PSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
-	//
+	ui32 stride = sizeof(Vertex);
+	ui32 offset = 0;
+	//Generate model Matrix from Position/Translation Rotation Scale -> TRS
+	
+	//Map the contents of the transformBuffer in CPU memory to be accessed by CPU
+	D3D11_MAPPED_SUBRESOURCE modelResource = {};
+	if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &modelResource)))
+	{
+		MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return;
+	}
+	//Convert mapped data to desired type
+	modelConstant* dataMat = reinterpret_cast<modelConstant*>(modelResource.pData);
+	//Assign new data to be uploaded
+	if (dataMat)
+	{
+		dataMat->world = transformMat;
+		dataMat->m = mat;
+		dataMat->m.roughness = (1.f - Clamp(mat.roughness, 0.001f, 0.99f)) * 32.f;
+	}
+	
+	//Unmap to confirm upload and discard old data
+	context->Unmap(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0);
+	
+	
+	//Bind the vertex data that describes the object we want to render
+	context->IASetVertexBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&vertexBuffer), &stride, &offset);
+	//Bind the index data that describes the faces of the object we want to render
+	context->IASetIndexBuffer(reinterpret_cast<ID3D11Buffer*>(indexBuffer), DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
+	//The the assembler what type of data he will be working with
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//Tell the assembler how the vertex shader inputs look like
+	context->IASetInputLayout(vertexLayout);
+	
+	//VERTEX SHADER STAGE
+	//Bind the transformation for rendering this object
+	context->VSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
+	//Bind the camera transformation for rendering this object
+	context->VSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
+	context->VSSetShader(vertexShader, nullptr, 0);
+	
+	//PIXEL SHADER STAGE
+	//Bind the transformation for rendering this object
+	context->PSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
+	//Bind the camera transformation for rendering this object
+	context->PSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
+	
 	//if(renderer->shaderType == MeshRenderer::ShaderType::BlinnPhong)
-	//	context->PSSetShader(pixelShader, nullptr, 0);
-	//else
-	//{
-	//	if (renderer->texture != nullptr)
-	//	{
-	//		context->PSSetSamplers(0, 1, &sampler);
-	//		context->PSSetShaderResources(0, 1, &renderer->texture);
-	//	}
-	//	context->PSSetShader(pixelSDFShader, nullptr, 0);
-	//}
-	//	
-	//
-	////OUTPUT MERGER STAGE
-	//
-	//context->OMSetRenderTargets(1, &rtv, depthView);
-	//float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	//context->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-	//
-	////Draw the object with the amount indices the object has
-	//context->DrawIndexed(renderer->indexCount, 0, 0);
+	if(true)
+		context->PSSetShader(pixelShader, nullptr, 0);
+	else
+	{
+		//if (renderer->texture != nullptr)
+		//{
+		//	context->PSSetSamplers(0, 1, &sampler);
+		//	context->PSSetShaderResources(0, 1, &renderer->texture);
+		//}
+		//context->PSSetShader(pixelSDFShader, nullptr, 0);
+	}
+		
+	
+	//OUTPUT MERGER STAGE
+	
+	context->OMSetRenderTargets(1, &rtv, depthView);
+	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	context->OMSetBlendState(blendState, blendFactor, 0xffffffff);
+	
+	//Draw the object with the amount indices the object has
+	context->DrawIndexed(indexCount, 0, 0);
 }
 void D3D11Renderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
-	//worldConstant worldCB;
-	//Camera::activeCamera = camera;
-	//worldCB.eye = Camera::activeCamera->gameObject->transform->position;
-	//worldCB.projView = Camera::activeCamera->GetViewProjMatrix();
-	//worldBuffer = CreateBuffer(BufferType::Constant, &worldCB, sizeof(worldConstant), UsageType::Dynamic);
-	//if (!worldBuffer)
-	//{
-	//	MessageBoxA(NULL, "Could not set camera", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-	//}
+	worldConstant worldCB;
+	worldCB.eye = eye;
+	worldCB.projView = viewProj;
+	if (worldBuffer != nullptr)
+	{
+		D3D11_MAPPED_SUBRESOURCE camResource = {};
+		if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &camResource)))
+		{
+			MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+			return;
+		}
+		//Convert mapped data to desired type
+		worldConstant* dataMat = reinterpret_cast<worldConstant*>(camResource.pData);
+		
+		//Assign new data to be uploaded
+		if (dataMat)
+		{
+			(*dataMat) = worldCB;
+		}
+		//Unmap to confirm upload and discard old data
+		context->Unmap(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0);
+	}
+	else
+	{
+		worldBuffer = CreateBuffer(BufferType::Constant, &worldCB, sizeof(worldConstant), UsageType::Dynamic);
+		if (!worldBuffer)
+		{
+			MessageBoxA(NULL, "Could not set camera", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		}
+	}
 }
 
 bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()

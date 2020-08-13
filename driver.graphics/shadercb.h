@@ -19,9 +19,9 @@ namespace Engine::Utils
     struct modelConstant
     {
         Engine::Math::Mat4x4 world = Engine::Math::Mat4x4::Identity; // 64 bytes
-        //Material m; //52 bytes
+        Material m; //52 bytes
 
-        //Engine::Math::Vec3 buffer; //3 * 4 bytes
+        Engine::Math::Vec3 buffer; //3 * 4 bytes
     };
 
     struct worldConstant

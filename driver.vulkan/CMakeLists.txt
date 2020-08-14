@@ -5,6 +5,10 @@ SET(TARGET_NAME driver.vulkan)
 # configure executable, properties and linkage
 add_library(${TARGET_NAME} STATIC)
 
+find_package(Vulkan)
+message(STATUS ${Vulkan_INCLUDE_DIR})
+message(STATUS ${Vulkan_LIBRARY})
+
 # add sources to target
 target_sources(
     ${TARGET_NAME}
@@ -20,9 +24,10 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFI
 
 target_link_libraries(${TARGET_NAME}
     driver.graphics
-    "${CMAKE_SOURCE_DIR}/externalLibs/vulkan-1.lib"
+    ${Vulkan_LIBRARY} 
 )
 
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.graphics"
+    "${Vulkan_INCLUDE_DIR}"
 )

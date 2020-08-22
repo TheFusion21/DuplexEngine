@@ -4,7 +4,6 @@ SET(TARGET_NAME engine.core)
 
 # configure executable, properties and linkage
 add_library(${TARGET_NAME} STATIC)
-
 # add sources to target
 target_sources(
     ${TARGET_NAME}
@@ -16,7 +15,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/bsdfmaterial.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/graphics/material.h"
+        
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.h"
 
@@ -35,6 +34,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/systemmanager.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/camerasystem.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/meshsystem.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/lightsystem.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/coordinator.h"
 

@@ -58,6 +58,21 @@ namespace Engine::Math
 				return sqrtf(SqrMagnitude());
 			#endif
 		}
+		inline Vec3 Project(Vec3 v) const
+		{
+			Vec3 bn = v / v.Magnitude();
+			return bn * this->Dot(bn);
+		}
+		inline real AngleBetween(Vec3 v) const
+		{
+			real angle = this->Dot(v);
+			angle /= this->Magnitude() * v.Magnitude();
+#ifdef DOUBLEPRECISION 
+			return angle = acos(angle);
+#else
+			return angle = acosf(angle);
+#endif
+		}
 		inline real SqrMagnitude() const
 		{
 			return x * x + y * y + z * z;
@@ -72,7 +87,7 @@ namespace Engine::Math
 		inline Vec3 Cross(Vec3 v) const
 		{
 			return Vec3{y * v.z - z * v.y,
-						z * v.x - z * v.x,
+						z * v.x - x * v.z,
 						x * v.y - y * v.x };
 		}
 		inline Vec3 Lerp(Vec3 v, real t) const

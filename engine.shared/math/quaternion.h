@@ -209,7 +209,11 @@ namespace Engine::Math
 		{
 			return Quaternion{ -x, -y, -z, w };
 		}
+		static Quaternion FromEuler(Vec3 euler)
+		{
 
+			return FromAngleAxis(euler.z, Vec3::UnitZ) * FromAngleAxis(euler.y, Vec3::UnitY) * FromAngleAxis(euler.x, Vec3::UnitX);
+		}
 		static Quaternion FromAngleAxis(real angle, const Vec3& axis)
 		{
 			Vec3 normAxis = axis;

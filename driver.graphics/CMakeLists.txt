@@ -9,6 +9,7 @@ add_library(${TARGET_NAME} STATIC)
 target_sources(
     ${TARGET_NAME}
     PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/enums.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/renderer.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/shadercb.h"
     PRIVATE

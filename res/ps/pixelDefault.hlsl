@@ -20,5 +20,5 @@ float4 PS_Main(ps_in input) : SV_TARGET
 
     float4 output = (saturate(Ia + Id) + Is) * lightColor;
     output.a = 1.0f;
-    return output;
+    return float4(0, 0, 0, 1);
 }

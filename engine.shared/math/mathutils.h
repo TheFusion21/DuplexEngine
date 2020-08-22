@@ -40,4 +40,13 @@ namespace Engine::Math
 	{
 		return a + t * (b - a);
 	}
+	template<typename T>
+	static constexpr T MipMapCountFrom(T width, T height)
+	{
+		T levels = 1;
+		while ((width | height) >> levels) {
+			++levels;
+		}
+		return levels;
+	}
 }

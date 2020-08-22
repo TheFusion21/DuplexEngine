@@ -15,4 +15,4 @@ add_subdirectory ("engine.shared")
 add_subdirectory ("engine.core")
 add_subdirectory ("engine.client")
 
-
+execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/res/shadercompiler.bat")

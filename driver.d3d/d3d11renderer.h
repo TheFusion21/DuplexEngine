@@ -11,7 +11,7 @@ namespace Engine::Graphics
 	class D3D11Renderer : public Renderer
 	{
 	private:
-		bool vsyncEnable = false;
+		bool vsyncEnable = true;
 		bool wireframe = false;
 		BOOL inFullscreen = false;
 
@@ -34,14 +34,18 @@ namespace Engine::Graphics
 		ID3D11PixelShader* pixelSDFShader = nullptr;
 
 		//Texture Sampler
-		ID3D11SamplerState* sampler = nullptr;
+		ID3D11SamplerState* defaultSampler = nullptr;
+		ID3D11SamplerState* computeSampler = nullptr;
 
 		ID3D11BlendState* blendState = nullptr;
 		//Camera
+		Engine::Utils::worldConstant worldLocalBuffer;
 		GraphicsBufferPtr worldBuffer = nullptr;
+		std::vector<Engine::Utils::GpuLight> lights;
 		ui32 width = 0, height = 0;
 
 		ID3D11Debug* debug = nullptr;
+		std::vector<ID3D11ShaderResourceView*> textureViews;
 		//Lights
 		//std::vector<Engine::Components::DirectionalLight*> dirLights;
 		//std::vector<Engine::Components::PointLight*> pointLights;
@@ -77,14 +81,24 @@ namespace Engine::Graphics
 		/// </summary>
 		void Shutdown();
 		//void RenderObject(Engine::Math::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
-		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat);
+		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
 		/// <summary>
 		/// Assign a camera to be used for rendering
 		/// </summary>
 		/// <param name="camera"></param>
 		void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj);
 
+		void ClearLights();
+
+		void SetLight(Engine::Utils::GpuLight lightDescriptor);
+
 		bool CheckForFullscreen();
+
+		IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
+		void ReleaseTexture(IntPtr& texture);
+		void UseTexture(ui32 slot, GraphicsBufferPtr view);
+		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format);
+		void ReleaseTextureSRV(IntPtr& srv);
 		/// <summary>
 		/// Create a Buffer in a specific type with data and the defined usage
 		/// </summary>
@@ -94,10 +108,8 @@ namespace Engine::Graphics
 		/// <param name="usage"></param>
 		/// <returns>A generic pointer to be used for rendering or updating the buffer</returns>
 		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
-		
-		GraphicsBufferPtr CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage = UsageType::Default);
+		void ReleaseBuffer(IntPtr& buffer);
 
-		ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);
 
 		//void AddDirectionalLight(Engine::Components::DirectionalLight& dirLight);
 		//void AddPointLight(Engine::Components::PointLight& pointLight);

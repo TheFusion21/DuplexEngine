@@ -3,21 +3,32 @@
 #include "math/types.h"
 namespace Engine::Graphics
 {
-	enum class LightType
-	{
-		Spot,
-		Directional,
-		Point
-	};
+	
 	struct Light
 	{
-		static const ui32 maxLightCount;
+		enum class LightType
+		{
+			Spot,
+			Directional,
+			Point
+		};
+		LightType type = LightType::Directional;
+		//Emission
 
 		Engine::Utils::FloatColor color = Engine::Utils::FloatColor::white;
-		LightType type = LightType::Directional;
-		float strength = 1.0f;
+		float intensity = 1.0f;
+		float indirectMultiplier = 1.0f;
 
-		float angle = 45.0f;
-		float range = 10.0f;
+		float angularDiameter = 0.0f;
+
+		float outerAngle  = 30.0f;
+		float innerAnglePercent = 0.0f;
+
+		float radius = 0.025f;
+		float range = 10;
+		static ui32 GetTypeID()
+		{
+			return 3;
+		}
 	};
 }

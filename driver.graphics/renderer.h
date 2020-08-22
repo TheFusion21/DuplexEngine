@@ -5,35 +5,23 @@
 
 #include "gameobject.h"
 #include "math/types.h"
-#include "../engine.core/graphics/material.h"
+#include "enums.h"
+#include "mesh.h"
+#include "shadercb.h"
 namespace Engine::Graphics
 {
 	class Renderer
 	{
-	private:
+	protected:
 		BOOL isFullscreen = false;
 		BOOL vsyncEnable = true;
 		BOOL wireFrame = false;
-
-	protected:
 		Renderer() { }
 		static Renderer* mpInstance;
 		Renderer(const Renderer&) { }
 		Renderer& operator=(const Renderer&) { }
 	public:
-		enum class BufferType
-		{
-			Index,
-			Vertex,
-			Constant,
-			DepthStencil,
-			ShaderResource,
-		};
-		enum class UsageType
-		{
-			Default,
-			Dynamic
-		};
+		
 		static void CreateInstance(Renderer* renderer)
 		{
 			if (mpInstance != nullptr)return;
@@ -51,23 +39,34 @@ namespace Engine::Graphics
 
 		virtual void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj) = 0;
 
+		virtual void ClearLights() = 0;
+		virtual void SetLight(Engine::Utils::GpuLight lightDescriptor) = 0;
+
 		virtual void BeginScene() = 0;
 
 		virtual void EndScene() = 0;
 
-		virtual void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat) = 0;
+		virtual void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) = 0;
+
+
 
 		virtual void Shutdown() = 0;
 
+		virtual IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) = 0;
+
+		virtual IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format) = 0;
+
+		virtual void UseTexture(ui32 slot, GraphicsBufferPtr view) = 0;
+
 		virtual GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) = 0;
-
-		virtual GraphicsBufferPtr CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage = UsageType::Default) = 0;
-
-		virtual ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc) = 0;
 
 		virtual bool Resize(ui32 width, ui32 height) = 0;
 
 		virtual bool CheckForFullscreen() = 0;
+
+		virtual void ReleaseTexture(IntPtr& texture) = 0;
+		virtual void ReleaseTextureSRV(IntPtr& srv) = 0;
+		virtual void ReleaseBuffer(IntPtr& buffer) = 0;
 
 	};
 }

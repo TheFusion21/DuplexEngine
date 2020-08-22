@@ -11,7 +11,6 @@
 #include "utils/color.h"
 #include "vertex.h"
 #include "transform.h"
-#include "shadercb.h"
 using namespace Engine::Math;
 using namespace Engine::Utils;
 using namespace Engine::Components;
@@ -183,16 +182,29 @@ bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
 		MessageBoxA(NULL, "Could not create transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
-	D3D11_SAMPLER_DESC samplerDesc = {};
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-	samplerDesc.MinLOD = 0;
-	samplerDesc.MaxLOD = 0;
-	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_ALWAYS;
-	if (FAILED(device->CreateSamplerState(&samplerDesc, &sampler)))
+	D3D11_SAMPLER_DESC defaultSamplerDesc = {};
+	defaultSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	defaultSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	defaultSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	defaultSamplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_ANISOTROPIC;
+	defaultSamplerDesc.MinLOD = 0;
+	defaultSamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	defaultSamplerDesc.MaxAnisotropy = D3D11_REQ_MAXANISOTROPY;
+	if (FAILED(device->CreateSamplerState(&defaultSamplerDesc, &defaultSampler)))
+	{
+		MessageBoxA(NULL, "Could not create sampler state", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return false;
+	}
+
+	D3D11_SAMPLER_DESC computeSamplerDesc = {};
+	computeSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	computeSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	computeSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP;
+	computeSamplerDesc.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	computeSamplerDesc.MinLOD = 0;
+	computeSamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	computeSamplerDesc.MaxAnisotropy = 1;
+	if (FAILED(device->CreateSamplerState(&computeSamplerDesc, &computeSampler)))
 	{
 		MessageBoxA(NULL, "Could not create sampler state", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
@@ -243,8 +255,7 @@ void Engine::Graphics::D3D11Renderer::SetViewPort()
 
 bool Engine::Graphics::D3D11Renderer::CreateRenderTarget()
 {
-	if (rtv)
-		SAFERELEASE(rtv);
+	SAFERELEASE(rtv);
 	//Create a texture2D that will represent the screen image
 	ID3D11Texture2D* surface = nullptr;
 	if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&surface))))
@@ -267,10 +278,9 @@ bool Engine::Graphics::D3D11Renderer::CreateRenderTarget()
 
 bool Engine::Graphics::D3D11Renderer::CreateDepthStencil()
 {
-	if (depthView)
-		SAFERELEASE(depthView);
+	SAFERELEASE(depthView);
 	//Create a Texture2D with 1 channel that the depth stencil buffer can write to
-	ID3D11Texture2D* depthSurface = reinterpret_cast<ID3D11Texture2D*>(CreateTexture2D(BufferType::DepthStencil, DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT_S8X24_UINT, nullptr, width, height, 0));
+	ID3D11Texture2D* depthSurface = reinterpret_cast<ID3D11Texture2D*>(CreateTexture(width, height, 1, TextureFormat::D32));
 	if (depthSurface == nullptr)
 	{
 		MessageBoxA(NULL, "Could not create depth buffer texture", "ERROR", MB_OK | MB_ICONEXCLAMATION);
@@ -310,17 +320,17 @@ bool Engine::Graphics::D3D11Renderer::Resize(ui32 width, ui32 height)
 	SAFERELEASE(rtv);
 	SAFERELEASE(depthView);
 
-
+	this->width = width;
+	this->height = height;
 	if (FAILED(swapChain->ResizeBuffers(2, width, height, DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH)))
 	{
 		MessageBoxA(NULL, "Could not resize swapChain", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
 
-	CreateRenderTarget();
 	CreateDepthStencil();
+	CreateRenderTarget();
 
-	context->OMSetRenderTargets(1, &rtv, depthView);
 	SetViewPort();
 
 	return true;
@@ -330,14 +340,14 @@ void D3D11Renderer::CreateShader()
 {
 	//Load compiled Vertex Shader file to a blob
 	ID3DBlob* vertexShaderBlob = nullptr;
-	if (FAILED(D3DReadFileToBlob(L"./data/shd/vertexDefault.shader", &vertexShaderBlob)))
+	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfVertex.shader", &vertexShaderBlob)))
 	{
 		MessageBoxA(NULL, "Could not load vertex shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return;
 	}
 	//Load compiled Pixel Shader file to a blob
 	ID3DBlob* pixelShaderBlob = nullptr;
-	if (FAILED(D3DReadFileToBlob(L"./data/shd/pixelDefault.shader", &pixelShaderBlob)))
+	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfPixel.shader", &pixelShaderBlob)))
 	{
 		MessageBoxA(NULL, "Could not load pixel shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -367,7 +377,7 @@ void D3D11Renderer::CreateShader()
 		return;
 	}
 	//Create Input Elements for the vertex Shader
-	D3D11_INPUT_ELEMENT_DESC vertexElemDesc[4] = { };
+	D3D11_INPUT_ELEMENT_DESC vertexElemDesc[5] = { };
 
 	/*
 	D3D11_INPUT_PER_VERTEX_DATA to declare that these elements are for a vertex shader
@@ -385,27 +395,34 @@ void D3D11Renderer::CreateShader()
 	vertexElemDesc[0].AlignedByteOffset = 0;
 	vertexElemDesc[0].SemanticIndex = 0;
 	vertexElemDesc[0].SemanticName = "POSITION";
-	//Format for 4 Float for the color r g b a
-	vertexElemDesc[1].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
+	//Format for 3 Float for the normal vec3
+	vertexElemDesc[1].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
 	vertexElemDesc[1].InputSlot = 0;
 	vertexElemDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	vertexElemDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	vertexElemDesc[1].SemanticIndex = 0;
-	vertexElemDesc[1].SemanticName = "COLOR";
-	//Format for 3 Float for the normal vec3
-	vertexElemDesc[2].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
+	vertexElemDesc[1].SemanticName = "NORMAL";
+	//Format for 2 Float for the texcoord/uv vec2
+	vertexElemDesc[2].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
 	vertexElemDesc[2].InputSlot = 0;
 	vertexElemDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	vertexElemDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	vertexElemDesc[2].SemanticIndex = 0;
-	vertexElemDesc[2].SemanticName = "NORMAL";
-	//Format for 2 Float for the texcoord/uv vec2
-	vertexElemDesc[3].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
+	vertexElemDesc[2].SemanticName = "TEXCOORD";
+
+	vertexElemDesc[3].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
 	vertexElemDesc[3].InputSlot = 0;
 	vertexElemDesc[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	vertexElemDesc[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	vertexElemDesc[3].SemanticIndex = 0;
-	vertexElemDesc[3].SemanticName = "TEXCOORD";
+	vertexElemDesc[3].SemanticName = "TANGENT";
+
+	vertexElemDesc[4].Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
+	vertexElemDesc[4].InputSlot = 0;
+	vertexElemDesc[4].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	vertexElemDesc[4].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	vertexElemDesc[4].SemanticIndex = 0;
+	vertexElemDesc[4].SemanticName = "BITTANGENT";
 
 	//Create a Input Layout for the vertex shader with the descriptions and count of the elements using the data read into the blob
 	if (FAILED(device->CreateInputLayout(vertexElemDesc, sizeof(vertexElemDesc) / sizeof(D3D11_INPUT_ELEMENT_DESC), vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), &vertexLayout)))
@@ -421,6 +438,40 @@ void D3D11Renderer::BeginScene()
 	context->ClearRenderTargetView(rtv, clearColor);
 	context->ClearDepthStencilView(depthView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
+	worldLocalBuffer.lightCount = static_cast<ui32>(lights.size());
+	int i = 0;
+	for (GpuLight l : lights)
+	{
+		worldLocalBuffer.lights[i] = l;
+		i++;
+	}
+	if (worldBuffer != nullptr)
+	{
+		D3D11_MAPPED_SUBRESOURCE camResource = {};
+		if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &camResource)))
+		{
+			MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+			return;
+		}
+		//Convert mapped data to desired type
+		worldConstant* dataMat = reinterpret_cast<worldConstant*>(camResource.pData);
+
+		//Assign new data to be uploaded
+		if (dataMat)
+		{
+			(*dataMat) = worldLocalBuffer;
+		}
+		//Unmap to confirm upload and discard old data
+		context->Unmap(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0);
+	}
+	else
+	{
+		worldBuffer = CreateBuffer(BufferType::Constant, &worldLocalBuffer, sizeof(worldConstant), UsageType::Dynamic);
+		if (!worldBuffer)
+		{
+			MessageBoxA(NULL, "Could not set camera", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		}
+	}
 	//if (Camera::activeCamera)
 	//{
 	//	Camera::activeCamera->SetAspect(static_cast<real>(width) / static_cast<real>(height));
@@ -479,17 +530,14 @@ void D3D11Renderer::Shutdown()
 	SAFERELEASE(vertexLayout);
 	SAFERELEASE(vertexShader);
 	SAFERELEASE(pixelShader);
+	SAFERELEASE(defaultSampler);
+	SAFERELEASE(computeSampler);
 }
 
-void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat)
+void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
 {
 	//INPUT ASSEMBLER STAGE
-	//MeshRenderer* renderer = object->GetComponent<MeshRenderer>();
-	//if (renderer == nullptr)
-	//	return;
-	//if (renderer->vertexBuffer == nullptr || renderer->indexBuffer == nullptr)
-	//	return;
-	//
+
 	ui32 stride = sizeof(Vertex);
 	ui32 offset = 0;
 	//Generate model Matrix from Position/Translation Rotation Scale -> TRS
@@ -507,8 +555,6 @@ void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr 
 	if (dataMat)
 	{
 		dataMat->world = transformMat;
-		dataMat->m = mat;
-		dataMat->m.roughness = (1.f - Clamp(mat.roughness, 0.001f, 0.99f)) * 32.f;
 	}
 	
 	//Unmap to confirm upload and discard old data
@@ -520,7 +566,7 @@ void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr 
 	//Bind the index data that describes the faces of the object we want to render
 	context->IASetIndexBuffer(reinterpret_cast<ID3D11Buffer*>(indexBuffer), DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
 	//The the assembler what type of data he will be working with
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//Tell the assembler how the vertex shader inputs look like
 	context->IASetInputLayout(vertexLayout);
 	
@@ -537,61 +583,44 @@ void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr 
 	//Bind the camera transformation for rendering this object
 	context->PSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
 	
-	//if(renderer->shaderType == MeshRenderer::ShaderType::BlinnPhong)
-	if(true)
-		context->PSSetShader(pixelShader, nullptr, 0);
-	else
-	{
 		//if (renderer->texture != nullptr)
 		//{
 		//	context->PSSetSamplers(0, 1, &sampler);
 		//	context->PSSetShaderResources(0, 1, &renderer->texture);
 		//}
 		//context->PSSetShader(pixelSDFShader, nullptr, 0);
-	}
-		
-	
+	context->PSSetShaderResources(0, static_cast<ui32>(textureViews.size()), textureViews.data());
+	ID3D11SamplerState* const modelSamplers[] =
+	{
+		defaultSampler,
+		computeSampler
+	};
+	//context->PSGetShaderResources(0, )
+	context->PSSetSamplers(0, 2, modelSamplers);
+	context->PSSetShader(pixelShader, nullptr, 0);
 	//OUTPUT MERGER STAGE
 	
 	context->OMSetRenderTargets(1, &rtv, depthView);
 	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	context->OMSetBlendState(blendState, blendFactor, 0xffffffff);
-	
 	//Draw the object with the amount indices the object has
 	context->DrawIndexed(indexCount, 0, 0);
+	textureViews.clear();
 }
 void D3D11Renderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
-	worldConstant worldCB;
-	worldCB.eye = eye;
-	worldCB.projView = viewProj;
-	if (worldBuffer != nullptr)
-	{
-		D3D11_MAPPED_SUBRESOURCE camResource = {};
-		if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &camResource)))
-		{
-			MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-			return;
-		}
-		//Convert mapped data to desired type
-		worldConstant* dataMat = reinterpret_cast<worldConstant*>(camResource.pData);
-		
-		//Assign new data to be uploaded
-		if (dataMat)
-		{
-			(*dataMat) = worldCB;
-		}
-		//Unmap to confirm upload and discard old data
-		context->Unmap(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0);
-	}
-	else
-	{
-		worldBuffer = CreateBuffer(BufferType::Constant, &worldCB, sizeof(worldConstant), UsageType::Dynamic);
-		if (!worldBuffer)
-		{
-			MessageBoxA(NULL, "Could not set camera", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		}
-	}
+	worldLocalBuffer.eye = eye;
+	worldLocalBuffer.projView = viewProj;
+}
+
+void Engine::Graphics::D3D11Renderer::ClearLights()
+{
+	lights.clear();
+}
+
+void Engine::Graphics::D3D11Renderer::SetLight(Engine::Utils::GpuLight lightDescriptor)
+{
+	lights.push_back(lightDescriptor);
 }
 
 bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()
@@ -604,6 +633,127 @@ bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()
 		return true;
 	}
 	return false;
+}
+
+IntPtr Engine::Graphics::D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
+{
+	ui32 pitch = 0;
+	D3D11_TEXTURE2D_DESC desc = {};
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = levels;
+	desc.ArraySize = 1;
+	switch (format)
+	{
+	case TextureFormat::RGBAFLOAT:
+		desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pitch = width * sizeof(float) * 4U;
+		break;
+	case TextureFormat::RGBA32:
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		pitch = width * sizeof(byte) * 4U;
+		break;
+	case TextureFormat::D32:
+		desc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		pitch = width * sizeof(byte);
+		break;
+	case TextureFormat::ALPHA8:
+		desc.Format = DXGI_FORMAT_A8_UNORM;
+		pitch = width * sizeof(byte);
+		break;
+	case TextureFormat::RED8:
+		desc.Format = DXGI_FORMAT_R8_UNORM;
+		pitch = width * sizeof(byte);
+		break;
+	case TextureFormat::REDFLOAT:
+		desc.Format = DXGI_FORMAT_R32_FLOAT;
+		pitch = width * sizeof(float);
+		break;
+	case TextureFormat::RED1:
+		desc.Format = DXGI_FORMAT_R1_UNORM;
+		pitch = width * sizeof(bool);
+	}
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	if (format == TextureFormat::D32)
+	{
+		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	}
+	else
+	{
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		if (levels == 0) {
+			desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
+			desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		}
+	}
+	D3D11_SUBRESOURCE_DATA* bufferSubResource = nullptr;
+	if (data)
+	{
+		bufferSubResource = new D3D11_SUBRESOURCE_DATA();
+		bufferSubResource->pSysMem = data;
+		bufferSubResource->SysMemPitch = pitch;
+		bufferSubResource->SysMemSlicePitch = height * pitch;
+
+	}
+	
+	ID3D11Texture2D* tex2D = nullptr;
+	if (FAILED(device->CreateTexture2D(&desc, bufferSubResource, &tex2D)))
+	{
+		MessageBoxA(NULL, "Could not create texture2D", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return nullptr;
+	}
+	return reinterpret_cast<IntPtr>(tex2D);
+}
+
+void Engine::Graphics::D3D11Renderer::ReleaseTexture(IntPtr& texture)
+{
+	ID3D11Texture2D* tex = reinterpret_cast<ID3D11Texture2D*>(texture);
+	SAFERELEASE(tex);
+	texture = nullptr;
+}
+
+void Engine::Graphics::D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
+{
+	while (slot >= textureViews.size())
+	{
+		textureViews.push_back(nullptr);
+	}
+	textureViews[slot] = reinterpret_cast<ID3D11ShaderResourceView*>(view);
+	
+}
+
+IntPtr Engine::Graphics::D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
+{
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	switch (format)
+	{
+	case TextureFormat::RGBAFLOAT:
+		srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case TextureFormat::RGBA32:
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case TextureFormat::D32:
+		srvDesc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		break;
+	}
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = -1;
+	ID3D11ShaderResourceView* srv = nullptr;
+	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Texture2D*>(texture), &srvDesc, &srv)))
+	{
+		return nullptr;
+	}
+	return reinterpret_cast<IntPtr>(srv);
+}
+
+void Engine::Graphics::D3D11Renderer::ReleaseTextureSRV(IntPtr& srv)
+{
+	ID3D11ShaderResourceView* tex = reinterpret_cast<ID3D11ShaderResourceView*>(srv);
+	SAFERELEASE(tex);
+	srv = nullptr;
 }
 
 GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
@@ -649,6 +799,7 @@ GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data,
 	bufferSubResource.pSysMem = data;
 	bufferSubResource.SysMemPitch = 0;
 	bufferSubResource.SysMemSlicePitch = 0;
+
 	ID3D11Buffer* buffer = nullptr;
 	//Tell device to create Vertex Buffer and the data in subresource
 	if (FAILED(device->CreateBuffer(&bufferDesc, &bufferSubResource, &buffer)))
@@ -659,74 +810,9 @@ GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data,
 	return reinterpret_cast<GraphicsBufferPtr>(buffer);
 }
 
-GraphicsBufferPtr D3D11Renderer::CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage)
+void Engine::Graphics::D3D11Renderer::ReleaseBuffer(IntPtr& buffer)
 {
-	ID3D11Texture2D* tex2D = nullptr;
-	D3D11_TEXTURE2D_DESC texDesc = {};
-	texDesc.Format = format;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Width = width;
-	texDesc.Height = height;
-	texDesc.SampleDesc.Count = 1;
-	texDesc.SampleDesc.Quality = 0;
-	switch (usage)
-	{
-	case UsageType::Dynamic:
-		texDesc.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC;
-		break;
-	default:
-		texDesc.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT;
-		break;
-	}
-	switch (type)
-	{
-	case BufferType::DepthStencil:
-		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-		break;
-	case BufferType::ShaderResource:
-		texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-		break;
-	default:
-		MessageBoxA(NULL, "invalid buffer type", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return nullptr;
-	}
-	D3D11_SUBRESOURCE_DATA * initData = nullptr;
-	if (data != nullptr)
-	{
-		initData = new D3D11_SUBRESOURCE_DATA();
-		initData->pSysMem = data;
-		initData->SysMemPitch = pitch;
-		initData->SysMemSlicePitch = pitch * height;
-	}	
-	if (FAILED(device->CreateTexture2D(&texDesc, initData, &tex2D)))
-	{
-		MessageBoxA(NULL, "Could not create texture2D", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return nullptr;
-	}
-	return reinterpret_cast<GraphicsBufferPtr>(tex2D);
+	ID3D11Buffer* b = reinterpret_cast<ID3D11Buffer*>(buffer);
+	SAFERELEASE(b);
+	buffer = nullptr;
 }
-
-ShaderResourcePtr Engine::Graphics::D3D11Renderer::CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
-{
-	ID3D11ShaderResourceView* view = nullptr;
-	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Resource*>(resource), desc, &view)))
-	{
-		return nullptr;
-	}
-	return reinterpret_cast<ShaderResourcePtr>(view);
-}
-
-/*void D3D11Renderer::AddDirectionalLight(DirectionalLight& dirLight)
-{
-	if(dirLights.size() < 255)
-		dirLights.push_back(&dirLight);
-}
-
-void Engine::Graphics::D3D11Renderer::AddPointLight(Engine::Components::PointLight& pointLight)
-{
-	if (pointLights.size() < 255)
-	{
-		pointLights.push_back(&pointLight);
-	}
-}*/

@@ -4,21 +4,27 @@
 #include "mesh.h"
 #include "vertex.h"
 #include "math/mathutils.h"
-
+#include <fstream>
+#include <sstream>
+#include "utils/exceptions.h"
+#include <map>
+#include <string>
+#include "objloader.h"
+using namespace std;
 using namespace Engine::Math;
 using namespace Engine::Utils;
 using namespace Engine::Resources;
 
 Mesh Mesh::GenerateQuad()
 {
-	Mesh m;
+	SubMesh m;
 	//Create the verices required to represent a quad
 	m.vertices =
 	{
-		{ Vec3{-0.5f, -0.5f, 0.0f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, -1.f}, Vec2{0.f,1.f} },
-		{ Vec3{0.5f, -0.5f, 0.0f}, FloatColor{0.f, 1.f, 0.f, 1.f}, Vec3{0.f, 0.f, -1.f}, Vec2{1.f,1.f} },
-		{ Vec3{-0.5f, 0.5f, 0.0f}, FloatColor{0.f, 0.f, 1.f, 1.f}, Vec3{0.f, 0.f, -1.f}, Vec2{0.f,0.f}},
-		{ Vec3{0.5f, 0.5f, 0.0f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, -1.f}, Vec2{1.f,0.f} }
+		{ Vec3{-0.5f, -0.5f, 0.0f}, Vec3{0.f, 0.f, -1.f}, Vec2{0.f,1.f} },
+		{ Vec3{0.5f, -0.5f, 0.0f}, Vec3{0.f, 0.f, -1.f}, Vec2{1.f,1.f} },
+		{ Vec3{-0.5f, 0.5f, 0.0f}, Vec3{0.f, 0.f, -1.f}, Vec2{0.f,0.f}},
+		{ Vec3{0.5f, 0.5f, 0.0f}, Vec3{0.f, 0.f, -1.f}, Vec2{1.f,0.f} }
 	};
 	//index the verices counterclock wise
 	//Counterclock wise because D3D uses it by default
@@ -27,51 +33,52 @@ Mesh Mesh::GenerateQuad()
 		0,1,2,
 		1,3,2
 	};
-	return m;
+	Mesh mesh;
+	mesh.subMeshes.push_back(m);
+	return mesh;
 }
 
 Mesh Mesh::GenerateFlatCube()
 {
-	Mesh m;
+	SubMesh m;
 	m.vertices =
 	{
 		//BACK FACE
-		{ Vec3{-0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,1.f} },
-		{ Vec3{ 0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f,-1.f}, Vec2{0.f,1.f} },
-		{ Vec3{ 0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f, -0.5f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,1.f} },
+		{ Vec3{ 0.5f,  0.5f, -0.5f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f, -0.5f}, Vec3{0.f, 0.f,-1.f}, Vec2{0.f,1.f} },
+		{ Vec3{ 0.5f, -0.5f, -0.5f}, Vec3{0.f, 0.f,-1.f}, Vec2{1.f,0.f} },
 
 		//BACK FACE
-		{ Vec3{-0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f,  0.5f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f,  0.5f,  0.5f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f,  0.5f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f, -0.5f,  0.5f}, Vec3{0.f, 0.f, 1.f}, Vec2{1.f,0.f} },
 		
 		//RIGHT FACE
-		{ Vec3{ 0.5f,  0.5f,  -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f,  0.5f,   0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f, -0.5f,  -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f, -0.5f,   0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f,  0.5f,  -0.5f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f,  0.5f,   0.5f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f, -0.5f,  -0.5f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f, -0.5f,   0.5f}, Vec3{1.f, 0.f, 1.f}, Vec2{1.f,0.f} },
 		
 		//LEFT FACE
-		{ Vec3{-0.5f,  0.5f,  -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f,  0.5f,   0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f,  -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f,   0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f,  -0.5f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f,   0.5f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f,  -0.5f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f,   0.5f}, Vec3{-1.f, 0.f, 0.f}, Vec2{1.f,0.f} },
 		
 		//BOTTOM
-		{ Vec3{-0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,1.f} },
-		{ Vec3{ 0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, -1.f, 0.f}, Vec2{0.f,1.f} },
-		{ Vec3{ 0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f,  0.5f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,1.f} },
+		{ Vec3{ 0.5f, -0.5f,  0.5f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f, -0.5f}, Vec3{0.f, -1.f, 0.f}, Vec2{0.f,1.f} },
+		{ Vec3{ 0.5f, -0.5f, -0.5f}, Vec3{0.f, -1.f, 0.f}, Vec2{1.f,0.f} },
 		
 		//TOP
-		{ Vec3{-0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,1.f} },
-		{ Vec3{ 0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 1.f, 0.f}, Vec2{0.f,1.f} },
-		{ Vec3{ 0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,0.f} }
+		{ Vec3{-0.5f,  0.5f,  0.5f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,1.f} },
+		{ Vec3{ 0.5f,  0.5f,  0.5f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f, -0.5f}, Vec3{0.f, 1.f, 0.f}, Vec2{0.f,1.f} },
+		{ Vec3{ 0.5f,  0.5f, -0.5f}, Vec3{0.f, 1.f, 0.f}, Vec2{1.f,0.f} }
 	};
-
 	//index the verices counterclock wise
 	//Counterclock wise because D3D uses it by default
 	m.indices =
@@ -83,23 +90,44 @@ Mesh Mesh::GenerateFlatCube()
 		16,18,17,18,19,17,
 		20,21,22,21,23,22
 	};
-	return m;
+
+	for (int i = 0; i < m.vertices.size(); i += 3)
+	{
+		auto& v0 = m.vertices[i];
+		auto& v1 = m.vertices[i+1];
+		auto& v2 = m.vertices[i+2];
+
+		Vec3 deltaPos1 = v1.position - v0.position;
+		Vec3 deltaPos2 = v2.position - v0.position;
+
+		Vec2 detalUV1 = v1.texCoords - v0.texCoords;
+		Vec2 detalUV2 = v2.texCoords - v0.texCoords;
+
+		float r = 1.0f / (detalUV1.x * detalUV2.y - detalUV1.y * detalUV2.x);
+		v0.tangent = v1.tangent = v2.tangent = (deltaPos1 * detalUV2.y - deltaPos2 * detalUV1.y) * r;
+		v0.bitTangent = v1.bitTangent = v2.bitTangent = (deltaPos2 * detalUV1.x - deltaPos1 * detalUV2.x) * r;
+
+
+	}
+	Mesh mesh;
+	mesh.subMeshes.push_back(m);
+	return mesh;
 }
 
 Mesh Mesh::GenerateSmoothCube()
 {
-	Mesh m;
+	SubMesh m;
 	m.vertices =
 	{
-		{ Vec3{-0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-0.5f,  0.5f, -0.5f}, Vec2{1.f,1.f} },
-		{ Vec3{ 0.5f,  0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{ 0.5f,  0.5f, -0.5f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-0.5f, -0.5f, -0.5f}, Vec2{0.f,1.f} },
-		{ Vec3{ 0.5f, -0.5f, -0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{ 0.5f, -0.5f, -0.5f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f,  0.5f, -0.5f}, Vec3{-0.5f,  0.5f, -0.5f}, Vec2{1.f,1.f} },
+		{ Vec3{ 0.5f,  0.5f, -0.5f}, Vec3{ 0.5f,  0.5f, -0.5f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f, -0.5f}, Vec3{-0.5f, -0.5f, -0.5f}, Vec2{0.f,1.f} },
+		{ Vec3{ 0.5f, -0.5f, -0.5f}, Vec3{ 0.5f, -0.5f, -0.5f}, Vec2{1.f,0.f} },
 
-		{ Vec3{-0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-0.5f,  0.5f,  0.5f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f,  0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{ 0.5f,  0.5f,  0.5f}, Vec2{1.f,0.f} },
-		{ Vec3{-0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{-0.5f, -0.5f,  0.5f}, Vec2{1.f,0.f} },
-		{ Vec3{ 0.5f, -0.5f,  0.5f}, FloatColor{1.f, 0.f, 0.f, 1.f}, Vec3{ 0.5f, -0.5f,  0.5f}, Vec2{1.f,0.f} }
+		{ Vec3{-0.5f,  0.5f,  0.5f}, Vec3{-0.5f,  0.5f,  0.5f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f,  0.5f,  0.5f}, Vec3{ 0.5f,  0.5f,  0.5f}, Vec2{1.f,0.f} },
+		{ Vec3{-0.5f, -0.5f,  0.5f}, Vec3{-0.5f, -0.5f,  0.5f}, Vec2{1.f,0.f} },
+		{ Vec3{ 0.5f, -0.5f,  0.5f}, Vec3{ 0.5f, -0.5f,  0.5f}, Vec2{1.f,0.f} }
 	};
 
 	//index the verices counterclock wise
@@ -113,19 +141,33 @@ Mesh Mesh::GenerateSmoothCube()
 		5,0,4,1,0,5,
 		2,3,7,6,2,7
 	};
-	return m;
+
+	for (int i = 0; i < m.vertices.size(); i += 3)
+	{
+		auto& v0 = m.vertices[i];
+		auto& v1 = m.vertices[i + 1];
+		auto& v2 = m.vertices[i + 2];
+
+		Vec3 deltaPos1 = v1.position - v0.position;
+		Vec3 deltaPos2 = v2.position - v0.position;
+
+		Vec2 detalUV1 = v1.texCoords - v0.texCoords;
+		Vec2 detalUV2 = v2.texCoords - v0.texCoords;
+
+		float r = 1.0f / (detalUV1.x * detalUV2.y - detalUV1.y * detalUV2.x);
+		v0.tangent = v1.tangent = v2.tangent = (deltaPos1 * detalUV2.y - deltaPos2 * detalUV1.y) * r;
+		v0.bitTangent = v1.bitTangent = v2.bitTangent = (deltaPos2 * detalUV1.x - deltaPos1 * detalUV2.x) * r;
+
+
+	}
+	Mesh mesh;
+	mesh.subMeshes.push_back(m);
+	return mesh;
 }
-//void Mesh::GenerateRoundedCube(float cornerRadius, int edgeCount)
-//{
-//	int vertexCount = (4 + edgeCount * 4);
-//	int indexCount = (6 + edgeCount * 6);
-//
-//
-//}
 
 Mesh Mesh::GenerateSphere(int rings, int segments)
 {
-	Mesh m;
+	SubMesh m;
 	rings = Max(rings, 3);
 	segments = Max(segments, 3);
 
@@ -137,8 +179,8 @@ Mesh Mesh::GenerateSphere(int rings, int segments)
 	int indexCount = (vertexCount - 2) * 6;
 	//this->indexCount = indexCount;
 	int v = 0;
-	m.vertices = std::vector<Vertex>(vertexCount);
-	m.indices = std::vector<int>(indexCount);
+	m.vertices = vector<Vertex>(vertexCount);
+	m.indices = vector<ui32>(indexCount);
 	for (int i = 0; i <= rings; ++i)
 	{
 		stackAngle = PI_2 - i * stackStep;
@@ -159,7 +201,6 @@ Mesh Mesh::GenerateSphere(int rings, int segments)
 			float nz = z;
 
 			m.vertices[v].normal = Vec3(nx, ny, nz);
-			m.vertices[v].color = FloatColor{ 1.0, 0.0, 0.0, 1.0 };
 			v++;
 			if (i == 0 || i == rings)
 				break;
@@ -208,5 +249,72 @@ Mesh Mesh::GenerateSphere(int rings, int segments)
 			}
 		}
 	}
+	Mesh mesh;
+	mesh.subMeshes.push_back(m);
+	return mesh;
+}
+
+Mesh Engine::Resources::Mesh::LoadFBX(const char* filename)
+{
+	ifstream file;
+
+	int bufferSize = 1 << 16;
+	char* buffer = new char[bufferSize];
+	file.rdbuf()->pubsetbuf(buffer, bufferSize);
+
+	file.open(filename, ios::in | ios::binary);
+	if(!file.is_open())
+		throw new FileLoadException(filename);
+	file.close();
+	return Mesh();
+}
+
+Mesh Engine::Resources::Mesh::LoadOBJ(const char* filename)
+{
+	Mesh m;
+
+	objl::Loader loader;
+	if (!loader.LoadFile(filename))
+	{
+		throw new FileLoadException(filename);
+	}
+	for (objl::Mesh lMesh : loader.LoadedMeshes)
+	{
+		SubMesh sm = {};
+		sm.vertices = lMesh.Vertices;
+		sm.indices = lMesh.Indices;
+		for (int i = 0; i < sm.indices.size(); i += 3)
+		{
+			Vertex& v0 = sm.vertices[sm.indices[i]];
+			Vertex& v1 = sm.vertices[sm.indices[i + 1]];
+			Vertex& v2 = sm.vertices[sm.indices[i + 2]];
+
+			Vec3 deltaPos1 = v1.position - v0.position;
+			Vec3 deltaPos2 = v2.position - v0.position;
+
+			Vec2 detalUV1 = v1.texCoords - v0.texCoords;
+			Vec2 detalUV2 = v2.texCoords - v0.texCoords;
+
+			float r = 1.0f / (detalUV1.x * detalUV2.y - detalUV1.y * detalUV2.x);
+			Vec3 tangent = (deltaPos1 * detalUV2.y - deltaPos2 * detalUV1.y) * r;
+
+			Vec3 bitangent = (deltaPos2 * detalUV1.x - deltaPos1 * detalUV2.x) * r;
+
+			v0.tangent += tangent;
+			v1.tangent += tangent;
+			v2.tangent += tangent;
+
+			v0.bitTangent += bitangent;
+			v1.bitTangent += bitangent;
+			v2.bitTangent += bitangent;
+		}
+		for (int i = 0; i < sm.vertices.size(); i ++)
+		{
+			sm.vertices[i].tangent.Normalize();
+			sm.vertices[i].bitTangent.Normalize();
+		}
+		m.subMeshes.push_back(sm);
+	}
+
 	return m;
 }

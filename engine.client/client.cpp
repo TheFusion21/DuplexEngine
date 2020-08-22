@@ -6,8 +6,7 @@
 #include "vulkanrenderer.h"
 #include "time.h"
 #include "input/input.h"
-
-#include "graphics/material.h"
+#include "graphics/light.h"
 #include "mesh.h"
 using namespace Game::Client;
 using namespace Engine::Graphics;
@@ -35,9 +34,11 @@ void Application::Init()
 	coordinator.RegisterComponent<Transform>();
 	coordinator.RegisterComponent<Camera>();
 	coordinator.RegisterComponent<MeshRenderer>();
+	coordinator.RegisterComponent<Light>();
 	//Register required Systems
 	camSystem = coordinator.RegisterSystem<CameraSystem>();
 	meshSystem = coordinator.RegisterSystem<MeshSystem>();
+	lightSystem = coordinator.RegisterSystem<LightSystem>();
 
 	//Signature required Components for Systems
 	Signature camSignature;
@@ -50,6 +51,11 @@ void Application::Init()
 	meshSignature.set(coordinator.GetComponentType<MeshRenderer>());
 	coordinator.SetSystemSignature<MeshSystem>(meshSignature);
 
+	Signature lightSignature;
+	lightSignature.set(coordinator.GetComponentType<Transform>());
+	lightSignature.set(coordinator.GetComponentType<Light>());
+	coordinator.SetSystemSignature<LightSystem>(lightSignature);
+
 
 	Entity camera = coordinator.CreateEntity();
 	Transform camTransform;
@@ -57,16 +63,36 @@ void Application::Init()
 	coordinator.AddComponent(camera, camTransform);
 	coordinator.AddComponent(camera, Camera());
 
-	Entity cube = coordinator.CreateEntity();
+	cube = coordinator.CreateEntity();
 	Transform cubeTransform;
-	cubeTransform.position.x = static_cast<real>(2.0);
+	cubeTransform.position.y = static_cast<real>(-1.5);
+	cubeTransform.scale = Vec3::UnitScale * static_cast<real>(2.0);
 	coordinator.AddComponent(cube, cubeTransform);
 	coordinator.AddComponent(cube, MeshRenderer());
-	Material m;
-	m.roughness = 0.1f;
-	m.Kd = { 1.f, 0.f, 0.f, 1.f };
-	coordinator.GetComponent<MeshRenderer>(cube).SetMaterial(m);
-	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::GenerateFlatCube());
+	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
+	BsdfMaterial uv_1;
+	uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
+	uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
+	uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
+	uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
+	uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n_DirectX.png", false);
+	uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
+	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_1);
+	BsdfMaterial uv_2;
+	uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
+	uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
+	uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
+	uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
+	uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n_DirectX.png", false);
+	uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
+	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_2);
+
+	dirLight = coordinator.CreateEntity();
+	coordinator.AddComponent(dirLight, Light());
+	Transform lightTransform;
+	//lightTransform.rotation = Quaternion::FromAngleAxis(static_cast<real>(45.0), Vec3::UnitX);
+	coordinator.AddComponent(dirLight, lightTransform);
+	//coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::GenerateSphere(128, 256));
 	/*{
 		gameObjects.push_back(new GameObject());
 		
@@ -116,19 +142,23 @@ void Application::Run()
 		//Renderer::GetInstancePtr()->SetActiveCamera(gameObjects[0]->transform->position, gameObjects[0]->GetComponent<Camera>()->GetViewProjMatrix());
 		//RENDER
 		camSystem->Update(coordinator);
-		
+		lightSystem->Update(coordinator);
+
 		Renderer::GetInstancePtr()->BeginScene();
 		meshSystem->Update(coordinator);
-		/*for (GameObject*& obj : gameObjects)
-		{
-			D3D11Renderer::GetInstancePtr()->Render(obj);
-		}
-		*/
 		Renderer::GetInstancePtr()->EndScene();
 		if (!window.MessagePump())
 		{
 			this->appState = AppState::Stopped;
 		}
+		Transform& t = coordinator.GetComponent<Transform>(dirLight);
+		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
+
+		
+		//Transform& t2 = coordinator.GetComponent<Transform>(cube);
+		//t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
+		Time::Update();
+		
 		/*
 		//UPDATE
 		for (GameObject*& obj : gameObjects)
@@ -139,7 +169,7 @@ void Application::Run()
 			}
 		}
 
-		Time::Update();
+		
 		if(window.IsFocused())
 			Input::Update();
 		gameObjects[1]->transform->scale = Vec3::UnitScale * (Time::sinTime * static_cast<real>(0.25) + static_cast<real>(1.0));

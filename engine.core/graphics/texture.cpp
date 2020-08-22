@@ -7,10 +7,10 @@ unsigned long Texture::currentTextureMemory = 0;
 
 IntPtr Engine::Graphics::Texture::GetNativeTexturePtr()
 {
-	return nullptr;
+	return _texResource;
 }
 
-Texture::Texture(bool enableReadWrite) : dimension(_dimension), width(_width), height(_height), enableReadWrite(enableReadWrite)
+Texture::Texture(bool enableReadWrite) : enableReadWrite(enableReadWrite)
 {
 
 }

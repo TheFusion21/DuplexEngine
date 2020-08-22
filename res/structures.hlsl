@@ -1,47 +1,56 @@
-#define MAX_LIGHTS 256
+#define MAX_LIGHTS 8
 
 struct vs_in
 {
-    float4 position : POSITION0;
-    float4 color : COLOR0;
+    float3 position : POSITION0;
     float3 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
+    float3 tangent : TANGENT0;
+    float3 bittangent : BITTANGENT;
 };
 
 struct ps_in
 {
     float4 position : SV_POSITION;
-    float4 positionW : POSITION0;
-    float4 color : COLOR0;
+    float3 positionW : POSITION0;
     float3 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
+    float3x3 tangentBasis : TBASIS;
 };
 
 struct Light
 {
-    float3 strength;
-    float falloffStart;
-    float3 direction;
-    float fallOffEnd;
+    unsigned int type;
+    float3 color;
+    float intensity;
+    float indirectMul;
+
+    float angularDiameter;
+    float outerAngle;
+    float innerAngle;
+    float radius;
+    float range;
+
+    float4x4 transform;
     float3 position;
-    float spotPower;
 };
 
-struct Material
-{
-    float4 Ka;
-    float4 Kd;
-    float4 Ks;
-    float Ns;
-};
 cbuffer modelConstant : register(b0)
 {
     float4x4 world;
-    Material m;
 };
 cbuffer worldConstant : register(b1)
 {
+    Light lights[MAX_LIGHTS];
     float4x4 viewProj;
     float3 eye;
-    float ambientLight;
+    unsigned int lightCount;
+    
+};
+
+struct Mat
+{
+    float3 albedo;
+    float metalness;
+    float roughness;
 };

@@ -19,5 +19,7 @@ namespace Engine::Utils
 		static const FloatColor orange;
 		static const FloatColor magenta;
 		static const FloatColor aqua;
+
+		static FloatColor FromTemperature(int kelvin);
 	};
 }

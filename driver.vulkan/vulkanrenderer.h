@@ -70,10 +70,9 @@ namespace Engine::Graphics
 		void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj);
 		void BeginScene();
 		void EndScene();
-		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat);
+		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
 		void Shutdown();
 		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
-		GraphicsBufferPtr CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage = UsageType::Default);
 		ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);
 		bool Resize(ui32 width, ui32 height);
 		bool CheckForFullscreen();

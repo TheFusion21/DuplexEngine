@@ -592,7 +592,7 @@ void Engine::Graphics::VulkanRenderer::EndScene()
 {
 }
 
-void Engine::Graphics::VulkanRenderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount, Material mat)
+void Engine::Graphics::VulkanRenderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
 {
 }
 
@@ -605,10 +605,6 @@ GraphicsBufferPtr Engine::Graphics::VulkanRenderer::CreateBuffer(BufferType type
 	return GraphicsBufferPtr();
 }
 
-GraphicsBufferPtr Engine::Graphics::VulkanRenderer::CreateTexture2D(BufferType type, DXGI_FORMAT format, const void* data, ui32 width, ui32 height, ui32 pitch, UsageType usage)
-{
-	return GraphicsBufferPtr();
-}
 
 ShaderResourcePtr Engine::Graphics::VulkanRenderer::CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
 {

@@ -25,6 +25,11 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/color.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/util.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/exceptions.h"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/containers/fast_mutex.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/containers/tinythread.h"
+
+        
         # "${CMAKE_CURRENT_SOURCE_DIR}/utils/singleton.h"
 
     PRIVATE
@@ -37,6 +42,8 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/math/quaternion.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/color.cpp"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/containers/tinythread.cpp"
 )
 # set additional target properties
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")

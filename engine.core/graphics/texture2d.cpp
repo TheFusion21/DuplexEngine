@@ -28,6 +28,9 @@ Texture2D Engine::Graphics::Texture2D::FromColor(ui32 width, ui32 height, bool e
 		data[i+2] = color.b;
 		data[i+3] = color.a;
 	}
+	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
+	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
+	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
 	return tex;
 }
 
@@ -52,6 +55,9 @@ Texture2D Engine::Graphics::Texture2D::FromValue(ui32 width, ui32 height, bool e
 	{
 		data[i + 0] = static_cast<byte>(value * 255);
 	}
+	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
+	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
+	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
 	return tex;
 }
 

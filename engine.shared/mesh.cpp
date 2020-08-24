@@ -292,13 +292,23 @@ Mesh Engine::Resources::Mesh::LoadOBJ(const char* filename)
 			Vec3 deltaPos1 = v1.position - v0.position;
 			Vec3 deltaPos2 = v2.position - v0.position;
 
-			Vec2 detalUV1 = v1.texCoords - v0.texCoords;
-			Vec2 detalUV2 = v2.texCoords - v0.texCoords;
+			Vec2 deltaUV1 = v1.texCoords - v0.texCoords;
+			Vec2 deltaUV2 = v2.texCoords - v0.texCoords;
 
-			float r = 1.0f / (detalUV1.x * detalUV2.y - detalUV1.y * detalUV2.x);
-			Vec3 tangent = (deltaPos1 * detalUV2.y - deltaPos2 * detalUV1.y) * r;
+			float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+			Vec3 tangent =
+			{
+				r * (deltaUV2.y * deltaPos1.x - deltaUV1.y * deltaPos2.x),
+				r * (deltaUV2.y * deltaPos1.y - deltaUV1.y * deltaPos2.y),
+				r * (deltaUV2.y * deltaPos1.z - deltaUV1.y * deltaPos2.z)
+			};
 
-			Vec3 bitangent = (deltaPos2 * detalUV1.x - deltaPos1 * detalUV2.x) * r;
+			Vec3 bitangent =
+			{
+				r * (-deltaUV2.x * deltaPos1.x - deltaUV1.x * deltaPos2.x),
+				r * (-deltaUV2.x * deltaPos1.y - deltaUV1.x * deltaPos2.y),
+				r * (-deltaUV2.x * deltaPos1.z - deltaUV1.x * deltaPos2.z)
+			};
 
 			v0.tangent += tangent;
 			v1.tangent += tangent;
@@ -311,7 +321,7 @@ Mesh Engine::Resources::Mesh::LoadOBJ(const char* filename)
 		for (int i = 0; i < sm.vertices.size(); i ++)
 		{
 			sm.vertices[i].tangent.Normalize();
-			sm.vertices[i].bitTangent.Normalize();
+			//sm.vertices[i].bitTangent.Normalize();
 		}
 		m.subMeshes.push_back(sm);
 	}

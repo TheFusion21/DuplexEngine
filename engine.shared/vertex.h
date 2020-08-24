@@ -8,9 +8,9 @@
 #include "math/quaternion.h"
 struct Vertex
 {
-	Engine::Math::Vec3 position;
-	Engine::Math::Vec3 normal;
-	Engine::Math::Vec2 texCoords;
-	Engine::Math::Vec3 tangent;
-	Engine::Math::Vec3 bitTangent;
+	Engine::Math::Vec3 position = Engine::Math::Vec3::Zero;
+	Engine::Math::Vec3 normal = Engine::Math::Vec3::Zero;
+	Engine::Math::Vec2 texCoords = Engine::Math::Vec2::Zero;
+	Engine::Math::Vec3 tangent = Engine::Math::Vec3::Zero;
+	Engine::Math::Vec3 bitTangent = Engine::Math::Vec3::Zero;
 };

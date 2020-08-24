@@ -71,65 +71,26 @@ void Application::Init()
 	coordinator.AddComponent(cube, MeshRenderer());
 	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
 	BsdfMaterial uv_1;
-	uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
-	uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
-	uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
-	uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
-	uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n_DirectX.png", false);
-	uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
+	//uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
+	//uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
+	//uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
+	//uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
+	//uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
+	//uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_1);
 	BsdfMaterial uv_2;
-	uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
-	uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
-	uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
-	uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
-	uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n_DirectX.png", false);
-	uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
+	//uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
+	//uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
+	//uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
+	//uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
+	//uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
+	//uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_2);
 
 	dirLight = coordinator.CreateEntity();
 	coordinator.AddComponent(dirLight, Light());
 	Transform lightTransform;
-	//lightTransform.rotation = Quaternion::FromAngleAxis(static_cast<real>(45.0), Vec3::UnitX);
 	coordinator.AddComponent(dirLight, lightTransform);
-	//coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::GenerateSphere(128, 256));
-	/*{
-		gameObjects.push_back(new GameObject());
-		
-		//Camera* camComponent = gameObjects[0]->AddComponent<Camera>();
-		//camComponent->SetFov(static_cast<real>(75.0));
-		//camComponent->SetPlanes(static_cast<real>(0.001), static_cast<real>(10000.0));
-		//gameObjects[0]->AddComponent<FlyCamera>();
-		//gameObjects[0]->transform->position.z = static_cast<real>(3.0);
-		
-	}
-	{
-		gameObjects.push_back(new GameObject());
-		gameObjects[1]->AddComponent<MeshRenderer>()->SetMesh(Mesh::GenerateFlatCube());
-		Material m;
-		m.roughness = 0.1f;
-		m.Kd = { 1.f, 0.f, 0.f, 1.f };
-		gameObjects[1]->GetComponent<MeshRenderer>()->SetMaterial(m);
-		gameObjects[1]->transform->position.x = static_cast<real>(2.0);
-	}
-	{
-		gameObjects.push_back(new GameObject());
-		gameObjects[2]->AddComponent<MeshRenderer>()->SetMesh(Mesh::GenerateSphere(32, 64));
-		Material m;
-		m.roughness = 0.9f;
-		m.Kd = { 0.8f, 0.8f, 0.1f, 1.f };
-		gameObjects[2]->GetComponent<MeshRenderer>()->SetMaterial(m);
-		gameObjects[2]->transform->scale = Vec3::UnitScale * static_cast<real>(1.6);
-	}
-	{
-		gameObjects.push_back(new GameObject());
-		gameObjects[3]->AddComponent<MeshRenderer>()->SetMesh(Mesh::GenerateQuad());
-		gameObjects[3]->GetComponent<MeshRenderer>()->SetShaderType(MeshRenderer::ShaderType::SignedDistanceField);
-		gameObjects[3]->GetComponent<MeshRenderer>()->UseTexture("./data/tex/font_test.png");
-		gameObjects[3]->transform->position.x = -static_cast<real>(2.0);
-		gameObjects[3]->transform->scale = Vec3::UnitScale * static_cast<real>(2.0);
-	}
-	*/
 	Time::Start();
 	this->appState = AppState::Running;
 }
@@ -155,26 +116,9 @@ void Application::Run()
 		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
 		
-		//Transform& t2 = coordinator.GetComponent<Transform>(cube);
-		//t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
+		Transform& t2 = coordinator.GetComponent<Transform>(cube);
+		t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
 		Time::Update();
-		
-		/*
-		//UPDATE
-		for (GameObject*& obj : gameObjects)
-		{
-			for (Component*& cmpnt : obj->components)
-			{
-				cmpnt->Update();
-			}
-		}
-
-		
-		if(window.IsFocused())
-			Input::Update();
-		gameObjects[1]->transform->scale = Vec3::UnitScale * (Time::sinTime * static_cast<real>(0.25) + static_cast<real>(1.0));
-		gameObjects[1]->transform->rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(30.0), Vec3::UnitY * static_cast<real>(Time::sinTime) - Vec3::UnitX);
-		*/
 	}
 }
 

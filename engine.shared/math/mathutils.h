@@ -1,7 +1,5 @@
 #pragma once
 
-// EXTERNAL INCLUDES
-#include <cassert>
 // INTERNAL INCLUDES
 #include "types.h"
 
@@ -32,7 +30,6 @@ namespace Engine::Math
 	template<typename T>
 	static constexpr T Clamp(const T& val, const T& min, const T& max)
 	{
-		assert(min <= max);
 		return Max(Min(val, max), min);
 	}
 	template<typename T>

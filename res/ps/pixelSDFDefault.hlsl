@@ -3,8 +3,8 @@
 Texture2D g_texture;
 
 SamplerState textureSampler;
-float threshold = 1.0f/8.f;
-float bias = 0.01f;
+static const float threshold = 1.0f/8.f;
+static const float bias = 0.01f;
 
 
 float median(float r, float g, float b)

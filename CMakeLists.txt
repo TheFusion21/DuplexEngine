@@ -6,6 +6,9 @@ cmake_minimum_required (VERSION 3.8)
 project ("PR210")
 
 include(compiler.cmake)
+find_package(Vulkan)
+message(STATUS ${Vulkan_INCLUDE_DIR})
+message(STATUS ${Vulkan_LIBRARY})
 
 # Include sub-projects.
 add_subdirectory ("driver.graphics")

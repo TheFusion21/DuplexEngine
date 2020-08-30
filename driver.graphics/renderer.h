@@ -20,6 +20,7 @@ namespace Engine::Graphics
 		static Renderer* mpInstance;
 		Renderer(const Renderer&) { }
 		Renderer& operator=(const Renderer&) { }
+		ui32 width = 0, height = 0;
 	public:
 		
 		static void CreateInstance(Renderer* renderer)

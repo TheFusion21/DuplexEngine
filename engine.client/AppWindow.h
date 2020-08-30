@@ -1,6 +1,7 @@
 #pragma once
 
 // EXTERNAL INCLUDES
+#define NOMINMAX
 #include <Windows.h>
 // INTERNAL INCLUDES
 #include "math/types.h"
@@ -28,5 +29,8 @@ namespace Engine::Core
 		void SetFocus(bool focus);
 		ui64 GetHandle();
 		ui64 GetInstance();
+
+		void SetTitle(const char* title);
+		const char* GetTitle();
 	};
 }

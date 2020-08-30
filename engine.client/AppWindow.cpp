@@ -178,3 +178,21 @@ ui64 Engine::Core::AppWindow::GetInstance()
 {
 	return reinterpret_cast<ui64>(instance);
 }
+
+void Engine::Core::AppWindow::SetTitle(const char* title)
+{
+	if (!isInit)
+		return;
+	SetWindowTextA(hwnd, title);
+}
+
+const char* Engine::Core::AppWindow::GetTitle()
+{
+	if (!isInit)
+		return nullptr;
+
+	int maxCount = 256;
+	char* title = new char[maxCount];
+	GetWindowTextA(hwnd, title, maxCount);
+	return title;
+}

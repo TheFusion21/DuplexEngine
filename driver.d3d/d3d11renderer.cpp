@@ -1,6 +1,8 @@
 
 // EXTERNAL INCLUDES
+
 #include <iostream>
+#define NOMINMAX
 #include <d3dcompiler.h>
 // INTERNAL INCLUDES
 #include "d3d11renderer.h"
@@ -11,6 +13,7 @@
 #include "utils/color.h"
 #include "vertex.h"
 #include "transform.h"
+//#include <spirv_cross/spirv_hlsl.hpp>
 using namespace Engine::Math;
 using namespace Engine::Utils;
 using namespace Engine::Components;
@@ -338,6 +341,24 @@ bool Engine::Graphics::D3D11Renderer::Resize(ui32 width, ui32 height)
 
 void D3D11Renderer::CreateShader()
 {
+	/*std::vector<ui32> vertexShaderSource;
+	FILE* vertexShaderSourceFile = fopen("./data/shd/bsdfVertex.spirv", "r");
+	if (vertexShaderSourceFile == nullptr)
+	{
+		throw std::string("bsdfVertex shader now found");
+	}
+	ui32 c;
+	while ((c = fgetc(vertexShaderSourceFile)) != EOF)
+	{
+		vertexShaderSource.push_back(c);
+	}
+	spirv_cross::CompilerHLSL hlslCompiler(std::move(vertexShaderSource));
+
+	spirv_cross::CompilerHLSL::Options options;
+
+	hlslCompiler.set_hlsl_options(options);
+
+	std::string vertexShaderHLSLSource = hlslCompiler.compile();*/
 	//Load compiled Vertex Shader file to a blob
 	ID3DBlob* vertexShaderBlob = nullptr;
 	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfVertex.shader", &vertexShaderBlob)))

@@ -20,6 +20,7 @@ void Application::Init()
 	AnsiString name = "PR210 Engine";
 	window.Init(name, 1280, 720);
 	window.Show();
+	window.SetTitle("THIS IS A Engine");
 	Renderer::CreateInstance(new D3D11Renderer());
 	ui32 width, height;
 	window.GetClientSize(width, height);

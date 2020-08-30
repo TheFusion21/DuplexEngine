@@ -42,7 +42,7 @@ namespace Engine::Graphics
 		Engine::Utils::worldConstant worldLocalBuffer;
 		GraphicsBufferPtr worldBuffer = nullptr;
 		std::vector<Engine::Utils::GpuLight> lights;
-		ui32 width = 0, height = 0;
+		
 
 		ID3D11Debug* debug = nullptr;
 		std::vector<ID3D11ShaderResourceView*> textureViews;

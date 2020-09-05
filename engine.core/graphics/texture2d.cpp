@@ -136,8 +136,11 @@ Texture2D Engine::Graphics::Texture2D::LoadFromFile(const char* filename, bool e
 	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
 	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
 	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
-	stbi_image_free(tex.data);
-	tex.data = nullptr;
+	if (!tex.enableReadWrite)
+	{
+		stbi_image_free(tex.data);
+		tex.data = nullptr;
+	}
 	return tex;
 }
 
@@ -193,17 +196,4 @@ Texture2D::Texture2D(ui32 width, ui32 height, bool enableReadWrite, TextureForma
 void Engine::Graphics::Texture2D::Resize(ui32 width, ui32 height)
 {
 	
-}
-
-IntPtr Engine::Graphics::Texture2D::GetNativeTexturePtr()
-{
-	
-	//if (!_texResourceView)
-	//{
-	//	_texResource = Renderer::GetInstancePtr()->CreateTexture(_width, _height, 1, _format, data);
-	//	_texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(_texResource, _format);
-	//	Renderer::GetInstancePtr()->ReleaseTexture(_texResource);
-	//	SAFEDELETEARR(data);
-	//}
-	return _texResourceView;
 }

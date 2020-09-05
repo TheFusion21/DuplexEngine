@@ -1,7 +1,7 @@
 #pragma once
 #include "utils/color.h"
 #include "texture.h"
-#include "enums.h"
+
 namespace Engine::Graphics
 {
 	class Texture2D : public Texture
@@ -28,13 +28,5 @@ namespace Engine::Graphics
 		
 		/// resizes a Texture2D to new dimensions
 		void Resize(ui32 width, ui32 height);
-
-		IntPtr GetNativeTexturePtr();
-	private:
-		TextureFormat _format = TextureFormat::RGBA32; ///< The format pixel data is stored in
-
-		
-
-		
-	}; // end of class Texture2D
+	};
 }

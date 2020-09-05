@@ -13,6 +13,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/stb_image.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/graphics/cubemap.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/bsdfmaterial.h"
         
@@ -44,6 +45,7 @@ target_sources(
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/graphics/cubemap.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.cpp"
 

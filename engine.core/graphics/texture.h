@@ -1,9 +1,8 @@
 #pragma once
 #include "math/types.h"
+#include "enums.h"
 namespace Engine::Graphics
 {
-	
-
 	enum class TextureDimension
 	{
 		None,
@@ -61,6 +60,7 @@ namespace Engine::Graphics
 		ui32 pitch;
 
 		TextureDimension _dimension = TextureDimension::None;
+		TextureFormat _format = TextureFormat::RGBA32;
 
 		IntPtr _texResource = nullptr;
 		IntPtr _texResourceView = nullptr;

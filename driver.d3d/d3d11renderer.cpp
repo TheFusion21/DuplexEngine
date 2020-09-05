@@ -452,6 +452,9 @@ void D3D11Renderer::CreateShader()
 		return;
 	}
 	//No need to create Input Elements for the pixel shader as the vertex shader give data to it in the shader code
+
+	//Generate LUTs
+
 }
 
 void D3D11Renderer::BeginScene()
@@ -461,7 +464,7 @@ void D3D11Renderer::BeginScene()
 
 	worldLocalBuffer.lightCount = static_cast<ui32>(lights.size());
 	int i = 0;
-	for (GpuLight l : lights)
+	for (GpuLight& l : lights)
 	{
 		worldLocalBuffer.lights[i] = l;
 		i++;
@@ -658,42 +661,13 @@ bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()
 
 IntPtr Engine::Graphics::D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
 {
-	ui32 pitch = 0;
+	ui32 pitch = PixelSizeFromTextureFormat(format) * width;
 	D3D11_TEXTURE2D_DESC desc = {};
 	desc.Width = width;
 	desc.Height = height;
 	desc.MipLevels = levels;
 	desc.ArraySize = 1;
-	switch (format)
-	{
-	case TextureFormat::RGBAFLOAT:
-		desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		pitch = width * sizeof(float) * 4U;
-		break;
-	case TextureFormat::RGBA32:
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		pitch = width * sizeof(byte) * 4U;
-		break;
-	case TextureFormat::D32:
-		desc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-		pitch = width * sizeof(byte);
-		break;
-	case TextureFormat::ALPHA8:
-		desc.Format = DXGI_FORMAT_A8_UNORM;
-		pitch = width * sizeof(byte);
-		break;
-	case TextureFormat::RED8:
-		desc.Format = DXGI_FORMAT_R8_UNORM;
-		pitch = width * sizeof(byte);
-		break;
-	case TextureFormat::REDFLOAT:
-		desc.Format = DXGI_FORMAT_R32_FLOAT;
-		pitch = width * sizeof(float);
-		break;
-	case TextureFormat::RED1:
-		desc.Format = DXGI_FORMAT_R1_UNORM;
-		pitch = width * sizeof(bool);
-	}
+	desc.Format = FromTextureFormat(format);
 	desc.SampleDesc.Count = 1;
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	if (format == TextureFormat::D32)
@@ -747,19 +721,8 @@ void Engine::Graphics::D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr vi
 IntPtr Engine::Graphics::D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
 {
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	switch (format)
-	{
-	case TextureFormat::RGBAFLOAT:
-		srvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		break;
-	case TextureFormat::RGBA32:
-		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		break;
-	case TextureFormat::D32:
-		srvDesc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
-		break;
-	}
-	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = FromTextureFormat(format);
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
 	ID3D11ShaderResourceView* srv = nullptr;
@@ -775,6 +738,21 @@ void Engine::Graphics::D3D11Renderer::ReleaseTextureSRV(IntPtr& srv)
 	ID3D11ShaderResourceView* tex = reinterpret_cast<ID3D11ShaderResourceView*>(srv);
 	SAFERELEASE(tex);
 	srv = nullptr;
+}
+
+IntPtr Engine::Graphics::D3D11Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
+{
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = FromTextureFormat(format);
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION::D3D10_1_SRV_DIMENSION_TEXTURECUBE;
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.MipLevels = -1;
+	ID3D11ShaderResourceView* srv = nullptr;
+	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Texture2D*>(cubemap), &srvDesc, &srv)))
+	{
+		return nullptr;
+	}
+	return reinterpret_cast<IntPtr>(srv);
 }
 
 GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
@@ -836,4 +814,41 @@ void Engine::Graphics::D3D11Renderer::ReleaseBuffer(IntPtr& buffer)
 	ID3D11Buffer* b = reinterpret_cast<ID3D11Buffer*>(buffer);
 	SAFERELEASE(b);
 	buffer = nullptr;
+}
+
+DXGI_FORMAT Engine::Graphics::D3D11Renderer::FromTextureFormat(TextureFormat format)
+{
+	switch (format)
+	{
+	case TextureFormat::RGBAFLOAT:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
+	case TextureFormat::RGBFLOAT:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
+
+	case TextureFormat::RGBA32:
+		return DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+	case TextureFormat::RGBA64:
+		return DXGI_FORMAT::DXGI_FORMAT_R16G16B16A16_UNORM;
+
+	case TextureFormat::ALPHA8:
+		return DXGI_FORMAT::DXGI_FORMAT_A8_UNORM;
+
+	case TextureFormat::RED8:
+		return DXGI_FORMAT::DXGI_FORMAT_R8_UNORM;
+	case TextureFormat::RED16:
+		return DXGI_FORMAT::DXGI_FORMAT_R16_UNORM;
+	case TextureFormat::REDFLOAT:
+		return DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT;
+	case TextureFormat::RED1:
+		return DXGI_FORMAT::DXGI_FORMAT_R1_UNORM;
+
+	case TextureFormat::D32:
+		return DXGI_FORMAT::DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+
+	case TextureFormat::RGFLOAT:
+		return DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
+	case TextureFormat::RG32:
+		return DXGI_FORMAT::DXGI_FORMAT_R16G16_UNORM;
+	}
+	return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 }

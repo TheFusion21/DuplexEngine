@@ -99,6 +99,8 @@ namespace Engine::Graphics
 		void UseTexture(ui32 slot, GraphicsBufferPtr view);
 		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format);
 		void ReleaseTextureSRV(IntPtr& srv);
+
+		IntPtr CreateCubemapSRV(IntPtr cubemap, TextureFormat format);
 		/// <summary>
 		/// Create a Buffer in a specific type with data and the defined usage
 		/// </summary>
@@ -113,5 +115,7 @@ namespace Engine::Graphics
 
 		//void AddDirectionalLight(Engine::Components::DirectionalLight& dirLight);
 		//void AddPointLight(Engine::Components::PointLight& pointLight);
+	private:
+		DXGI_FORMAT FromTextureFormat(TextureFormat format);
 	};
 }

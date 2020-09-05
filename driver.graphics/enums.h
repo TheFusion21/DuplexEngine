@@ -23,14 +23,20 @@ namespace Engine::Graphics
 		RGBFLOAT,
 		//RGB color and alpha with 8-bits unsigned-normalized-integer each.
 		RGBA32,
+		//RGB color and alpha with 16-bits unsigned-normalized-integer each.
+		RGBA64,
 		//alpa only with 8-bits unsigned-normalized-integer
 		ALPHA8,
 		//red only with 8-bits unsigned-normalized-integer
 		RED8,
+		RED16,
 		REDFLOAT,
 		//red only with 1-bits unsigned-normalized-integer
 		RED1,
 		//depth
-		D32
+		D32,
+
+		RGFLOAT,
+		RG32
 	};
 }

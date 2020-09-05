@@ -59,6 +59,8 @@ namespace Engine::Graphics
 
 		virtual void UseTexture(ui32 slot, GraphicsBufferPtr view) = 0;
 
+		virtual IntPtr CreateCubemapSRV(IntPtr cubemap, TextureFormat format) = 0;
+
 		virtual GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) = 0;
 
 		virtual bool Resize(ui32 width, ui32 height) = 0;
@@ -69,5 +71,7 @@ namespace Engine::Graphics
 		virtual void ReleaseTextureSRV(IntPtr& srv) = 0;
 		virtual void ReleaseBuffer(IntPtr& buffer) = 0;
 
+	protected:
+		ui32 PixelSizeFromTextureFormat(TextureFormat format);
 	};
 }

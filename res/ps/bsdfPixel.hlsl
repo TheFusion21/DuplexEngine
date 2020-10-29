@@ -83,7 +83,7 @@ float4 PS_Main(ps_in input) : SV_TARGET
 
 
 	float3 Lo = float3(0.0f, 0.0f, 0.0f);
-	[unroll(MAX_LIGHTS)]
+	//[unroll(MAX_LIGHTS)]
 	for (unsigned int i = 0; i < lightCount; i++)
 	{
 		if (lights[i].type == 0)

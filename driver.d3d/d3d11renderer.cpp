@@ -345,6 +345,8 @@ bool Engine::Graphics::D3D11Renderer::Resize(ui32 width, ui32 height)
 void D3D11Renderer::CreateShader()
 {
 	ID3DBlob* vertexShaderBlob = nullptr;
+	ID3DBlob* pixelShaderBlob = nullptr;
+	ID3DBlob* pixelSDFShaderBlob = nullptr;
 	
 	{
 		FILE* file = fopen("./data/shd/bsdfVertex.spirv", "rb");
@@ -360,15 +362,21 @@ void D3D11Renderer::CreateShader()
 			spirv.clear();
 		fclose(file);
 		spirv_cross::Parser parser(std::move(spirv));
+
 		parser.parse();
 		spirv_cross::CompilerHLSL::Options options;
 		options.shader_model = 50;
-
 		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
 		hlslCompiler.set_hlsl_options(options);
+		hlslCompiler.add_vertex_attribute_remap({ 0, "POSITION0" });
+		hlslCompiler.add_vertex_attribute_remap({ 1, "NORMAL0" });
+		hlslCompiler.add_vertex_attribute_remap({ 2, "TEXCOORD0" });
+		hlslCompiler.add_vertex_attribute_remap({ 3, "TANGENT0" });
+		hlslCompiler.add_vertex_attribute_remap({ 4, "BITTANGENT0" });
+		hlslCompiler.add_vertex_attribute_remap({ 5, "BITTANGENT0" });
 		std::string vertexShaderHLSLSource = hlslCompiler.compile();
+		auto model = hlslCompiler.get_execution_model();
 		printf(vertexShaderHLSLSource.c_str());
-
 		D3D_SHADER_MACRO defines[] =
 		{
 			NULL, NULL
@@ -383,26 +391,81 @@ void D3D11Renderer::CreateShader()
 		}
 		printf("oooh yeah");
 	}
+	{
+		FILE* file = fopen("./data/shd/bsdfPixel.spirv", "rb");
+		if (file == nullptr)
+		{
+			throw std::string("bsdfPixel shader now found");
+		}
+		fseek(file, 0, SEEK_END);
+		long len = ftell(file) / sizeof(ui32);
+		rewind(file);
+		std::vector<ui32> spirv(len);
+		if (fread(spirv.data(), sizeof(ui32), len, file) != size_t(len))
+			spirv.clear();
+		fclose(file);
+		spirv_cross::Parser parser(std::move(spirv));
+		parser.parse();
+		spirv_cross::CompilerHLSL::Options options;
+		options.shader_model = 50;
+
+		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
+		hlslCompiler.set_hlsl_options(options);
+		std::string pixelShaderHLSLSource = hlslCompiler.compile();
+		printf(pixelShaderHLSLSource.c_str());
+
+		D3D_SHADER_MACRO defines[] =
+		{
+			NULL, NULL
+		};
+		ID3DBlob* errorBlob = nullptr;
+		HRESULT res = D3DCompile(pixelShaderHLSLSource.c_str(), pixelShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &pixelShaderBlob, &errorBlob);
+		if (FAILED(res))
+		{
+			auto error = (char*)errorBlob->GetBufferPointer();
+			errorBlob->Release();
+			printf(error);
+		}
+		printf("oooh yeah");
+	}
+	{
+		FILE* file = fopen("./data/shd/pixelSDFDefault.spirv", "rb");
+		if (file == nullptr)
+		{
+			throw std::string("SDFPixel shader now found");
+		}
+		fseek(file, 0, SEEK_END);
+		long len = ftell(file) / sizeof(ui32);
+		rewind(file);
+		std::vector<ui32> spirv(len);
+		if (fread(spirv.data(), sizeof(ui32), len, file) != size_t(len))
+			spirv.clear();
+		fclose(file);
+		spirv_cross::Parser parser(std::move(spirv));
+		parser.parse();
+		spirv_cross::CompilerHLSL::Options options;
+		options.shader_model = 50;
+
+		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
+		hlslCompiler.set_hlsl_options(options);
+		std::string pixelSDFShaderHLSLSource = hlslCompiler.compile();
+		printf(pixelSDFShaderHLSLSource.c_str());
+
+		D3D_SHADER_MACRO defines[] =
+		{
+			NULL, NULL
+		};
+		ID3DBlob* errorBlob = nullptr;
+		HRESULT res = D3DCompile(pixelSDFShaderHLSLSource.c_str(), pixelSDFShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &pixelSDFShaderBlob, &errorBlob);
+		if (FAILED(res))
+		{
+			auto error = (char*)errorBlob->GetBufferPointer();
+			errorBlob->Release();
+			printf(error);
+		}
+		printf("oooh yeah");
+	}
 	
-	//Load compiled Vertex Shader file to a blob
-	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfVertex.shader", &vertexShaderBlob)))
-	{
-		MessageBoxA(NULL, "Could not load vertex shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return;
-	}
-	//Load compiled Pixel Shader file to a blob
-	ID3DBlob* pixelShaderBlob = nullptr;
-	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfPixel.shader", &pixelShaderBlob)))
-	{
-		MessageBoxA(NULL, "Could not load pixel shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return;
-	}//Load compiled Pixel Shader file to a blob
-	ID3DBlob* pixelSDFShaderBlob = nullptr;
-	if (FAILED(D3DReadFileToBlob(L"./data/shd/pixelSDFDefault.shader", &pixelSDFShaderBlob)))
-	{
-		MessageBoxA(NULL, "Could not load pixel shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return;
-	}
 	//Create a Vertex Shader from blob
 	if (FAILED(device->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), nullptr, &vertexShader)))
 	{

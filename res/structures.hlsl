@@ -6,7 +6,7 @@ struct vs_in
     float3 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
     float3 tangent : TANGENT0;
-    float3 bittangent : BITTANGENT;
+    float3 bittangent : BITTANGENT0;
 };
 
 struct ps_in

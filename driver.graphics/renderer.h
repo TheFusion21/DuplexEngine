@@ -49,8 +49,6 @@ namespace Engine::Graphics
 
 		virtual void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) = 0;
 
-
-
 		virtual void Shutdown() = 0;
 
 		virtual IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) = 0;
@@ -73,5 +71,7 @@ namespace Engine::Graphics
 
 	protected:
 		ui32 PixelSizeFromTextureFormat(TextureFormat format);
+
+
 	};
 }

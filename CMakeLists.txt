@@ -9,7 +9,7 @@ include(compiler.cmake)
 find_package(Vulkan)
 message(STATUS ${Vulkan_INCLUDE_DIR})
 message(STATUS ${Vulkan_LIBRARY})
-
+add_subdirectory ("engine.spirv")
 # Include sub-projects.
 add_subdirectory ("driver.graphics")
 add_subdirectory ("driver.d3d")

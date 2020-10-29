@@ -13,7 +13,10 @@
 #include "utils/color.h"
 #include "vertex.h"
 #include "transform.h"
-//#include <spirv_cross/spirv_hlsl.hpp>
+#include "spirv_cpp.hpp"
+#include "spirv_parser.hpp"
+#include "spirv_hlsl.hpp"
+#include "spirv_reflect.hpp"
 using namespace Engine::Math;
 using namespace Engine::Utils;
 using namespace Engine::Components;
@@ -341,26 +344,47 @@ bool Engine::Graphics::D3D11Renderer::Resize(ui32 width, ui32 height)
 
 void D3D11Renderer::CreateShader()
 {
-	/*std::vector<ui32> vertexShaderSource;
-	FILE* vertexShaderSourceFile = fopen("./data/shd/bsdfVertex.spirv", "r");
-	if (vertexShaderSourceFile == nullptr)
-	{
-		throw std::string("bsdfVertex shader now found");
-	}
-	ui32 c;
-	while ((c = fgetc(vertexShaderSourceFile)) != EOF)
-	{
-		vertexShaderSource.push_back(c);
-	}
-	spirv_cross::CompilerHLSL hlslCompiler(std::move(vertexShaderSource));
-
-	spirv_cross::CompilerHLSL::Options options;
-
-	hlslCompiler.set_hlsl_options(options);
-
-	std::string vertexShaderHLSLSource = hlslCompiler.compile();*/
-	//Load compiled Vertex Shader file to a blob
 	ID3DBlob* vertexShaderBlob = nullptr;
+	
+	{
+		FILE* file = fopen("./data/shd/bsdfVertex.spirv", "rb");
+		if (file == nullptr)
+		{
+			throw std::string("bsdfVertex shader now found");
+		}
+		fseek(file, 0, SEEK_END);
+		long len = ftell(file) / sizeof(ui32);
+		rewind(file);
+		std::vector<ui32> spirv(len);
+		if (fread(spirv.data(), sizeof(ui32), len, file) != size_t(len))
+			spirv.clear();
+		fclose(file);
+		spirv_cross::Parser parser(std::move(spirv));
+		parser.parse();
+		spirv_cross::CompilerHLSL::Options options;
+		options.shader_model = 50;
+
+		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
+		hlslCompiler.set_hlsl_options(options);
+		std::string vertexShaderHLSLSource = hlslCompiler.compile();
+		printf(vertexShaderHLSLSource.c_str());
+
+		D3D_SHADER_MACRO defines[] =
+		{
+			NULL, NULL
+		};
+		ID3DBlob* errorBlob = nullptr;
+		HRESULT res = D3DCompile(vertexShaderHLSLSource.c_str(), vertexShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "vs_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &vertexShaderBlob, &errorBlob);
+		if (FAILED(res))
+		{
+			auto error = (char*)errorBlob->GetBufferPointer();
+			errorBlob->Release();
+			printf(error);
+		}
+		printf("oooh yeah");
+	}
+	
+	//Load compiled Vertex Shader file to a blob
 	if (FAILED(D3DReadFileToBlob(L"./data/shd/bsdfVertex.shader", &vertexShaderBlob)))
 	{
 		MessageBoxA(NULL, "Could not load vertex shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);

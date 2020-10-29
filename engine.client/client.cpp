@@ -57,7 +57,6 @@ void Application::Init()
 	lightSignature.set(coordinator.GetComponentType<Light>());
 	coordinator.SetSystemSignature<LightSystem>(lightSignature);
 
-
 	Entity camera = coordinator.CreateEntity();
 	Transform camTransform;
 	camTransform.position.z = static_cast<real>(3.0);
@@ -72,20 +71,20 @@ void Application::Init()
 	coordinator.AddComponent(cube, MeshRenderer());
 	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
 	BsdfMaterial uv_1;
-	//uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
-	//uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
-	//uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
-	//uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
-	//uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
-	//uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
+	uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
+	uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
+	uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
+	uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
+	uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
+	uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_1);
 	BsdfMaterial uv_2;
-	//uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
-	//uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
-	//uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
-	//uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
-	//uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
-	//uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
+	uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
+	uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
+	uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
+	uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
+	uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
+	uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_2);
 
 	dirLight = coordinator.CreateEntity();

@@ -20,7 +20,9 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFI
 
 target_link_libraries(${TARGET_NAME}
     driver.graphics
+    spirv-cross-hlsl
 )
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.graphics"
+	"${CMAKE_SOURCE_DIR}/engine.spirv"
 )

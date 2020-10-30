@@ -1,0 +1,2 @@
+[submodule "engine.spirv"]
+	url = https://github.com/KhronosGroup/SPIRV-Cross.git

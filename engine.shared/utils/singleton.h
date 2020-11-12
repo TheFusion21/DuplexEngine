@@ -2,7 +2,9 @@
 
 // EXTERNAL INCLUDES
 // INTERNAL INCLUDES
-namespace Engine::Utils
+#include "namespaces.h"
+
+namespace DUPLEX_NS_UTIL
 {
 #define GE_DECLARE_SINGLETON(CLASS)			\
 	public:										\

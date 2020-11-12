@@ -3,7 +3,7 @@
 // INTERNAL INCLUDES
 #include "mat4x4.h"
 
-using namespace Engine::Math;
+using namespace DUPLEX_NS_MATH;
 
 const Mat4x4 Mat4x4::Identity =
 {

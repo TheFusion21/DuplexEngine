@@ -10,13 +10,13 @@ namespace Engine::ECS
 	public:
 		void Update(Coordinator& coord)
 		{
-			Engine::Graphics::Renderer::GetInstancePtr()->ClearLights();
+			DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ClearLights();
 			for (auto const& entity : entities)
 			{
 				auto& transform = coord.GetComponent<Transform>(entity);
-				auto& light = coord.GetComponent<Engine::Graphics::Light>(entity);
+				auto& light = coord.GetComponent<DUPLEX_NS_GRAPHICS::Light>(entity);
 
-				Engine::Utils::GpuLight gpuLight;
+				DUPLEX_NS_UTIL::GpuLight gpuLight;
 				gpuLight.type = static_cast<ui32>(light.type);
 				gpuLight.color = { light.color.r, light.color.g, light.color.b };
 				gpuLight.intensity = light.intensity;
@@ -26,12 +26,12 @@ namespace Engine::ECS
 				gpuLight.innerAngle = light.innerAnglePercent;
 				gpuLight.radius = light.radius;
 				gpuLight.range = light.range;
-				if(light.type == Engine::Graphics::Light::LightType::Directional)
-					gpuLight.transform = Engine::Math::Mat4x4::FromOrientation(transform.rotation);
+				if(light.type == DUPLEX_NS_GRAPHICS::Light::LightType::Directional)
+					gpuLight.transform = DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation);
 				else
-					gpuLight.transform = Engine::Math::Mat4x4::FromTranslation(transform.position) * Engine::Math::Mat4x4::FromOrientation(transform.rotation);
+					gpuLight.transform = DUPLEX_NS_MATH::Mat4x4::FromTranslation(transform.position) * DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation);
 				gpuLight.position = transform.position;
-				Engine::Graphics::Renderer::GetInstancePtr()->SetLight(gpuLight);
+				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->SetLight(gpuLight);
 			}
 		}
 		static ui32 GetTypeID()

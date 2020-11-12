@@ -8,7 +8,9 @@
 #include "enums.h"
 #include "mesh.h"
 #include "shadercb.h"
-namespace Engine::Graphics
+#include "namespaces.h"
+
+namespace DUPLEX_NS_GRAPHICS
 {
 	class Renderer
 	{
@@ -38,16 +40,16 @@ namespace Engine::Graphics
 
 		virtual void CreateShader() = 0;
 
-		virtual void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj) = 0;
+		virtual void SetActiveCamera(DUPLEX_NS_MATH::Vec3 eye, DUPLEX_NS_MATH::Mat4x4 viewProj) = 0;
 
 		virtual void ClearLights() = 0;
-		virtual void SetLight(Engine::Utils::GpuLight lightDescriptor) = 0;
+		virtual void SetLight(DUPLEX_NS_UTIL::GpuLight lightDescriptor) = 0;
 
 		virtual void BeginScene() = 0;
 
 		virtual void EndScene() = 0;
 
-		virtual void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) = 0;
+		virtual void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) = 0;
 
 		virtual void Shutdown() = 0;
 

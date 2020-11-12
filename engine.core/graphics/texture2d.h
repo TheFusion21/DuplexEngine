@@ -2,7 +2,7 @@
 #include "utils/color.h"
 #include "texture.h"
 
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	class Texture2D : public Texture
 	{
@@ -13,7 +13,7 @@ namespace Engine::Graphics
 			ALPHA
 		};
 		/// Create a uniform Texture2D with specific width and height preferably power of 2
-		static Texture2D FromColor(ui32 width, ui32 height, bool enableReadWrite, Engine::Utils::FloatColor color);
+		static Texture2D FromColor(ui32 width, ui32 height, bool enableReadWrite, DUPLEX_NS_UTIL::FloatColor color);
 		static Texture2D FromValue(ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode = SingleChannelMode::RED);
 		
 		static Texture2D LoadFromFile(const char* filename, bool enableReadWrite);

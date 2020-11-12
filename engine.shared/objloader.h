@@ -44,11 +44,11 @@ namespace objl
 		// Material Name
 		std::string name;
 		// Ambient Color
-		Engine::Math::Vec3 Ka;
+		DUPLEX_NS_MATH::Vec3 Ka;
 		// Diffuse Color
-		Engine::Math::Vec3 Kd;
+		DUPLEX_NS_MATH::Vec3 Kd;
 		// Specular Color
-		Engine::Math::Vec3 Ks;
+		DUPLEX_NS_MATH::Vec3 Ks;
 		// Specular Exponent
 		float Ns;
 		// Optical Density
@@ -106,10 +106,10 @@ namespace objl
 	namespace algorithm
 	{
 		// A test to see if P1 is on the same side as P2 of a line segment ab
-		bool SameSide(Engine::Math::Vec3 p1, Engine::Math::Vec3 p2, Engine::Math::Vec3 a, Engine::Math::Vec3 b)
+		bool SameSide(DUPLEX_NS_MATH::Vec3 p1, DUPLEX_NS_MATH::Vec3 p2, DUPLEX_NS_MATH::Vec3 a, DUPLEX_NS_MATH::Vec3 b)
 		{
-			Engine::Math::Vec3 cp1 = (b-a).Cross(p1 - a);
-			Engine::Math::Vec3 cp2 = (b - a).Cross(p2 - a);
+			DUPLEX_NS_MATH::Vec3 cp1 = (b-a).Cross(p1 - a);
+			DUPLEX_NS_MATH::Vec3 cp2 = (b - a).Cross(p2 - a);
 
 			if (cp1.Dot(cp2) >= 0)
 				return true;
@@ -118,18 +118,18 @@ namespace objl
 		}
 
 		// Generate a cross produect normal for a triangle
-		Engine::Math::Vec3 GenTriNormal(Engine::Math::Vec3 t1, Engine::Math::Vec3 t2, Engine::Math::Vec3 t3)
+		DUPLEX_NS_MATH::Vec3 GenTriNormal(DUPLEX_NS_MATH::Vec3 t1, DUPLEX_NS_MATH::Vec3 t2, DUPLEX_NS_MATH::Vec3 t3)
 		{
-			Engine::Math::Vec3 u = t2 - t1;
-			Engine::Math::Vec3 v = t3 - t1;
+			DUPLEX_NS_MATH::Vec3 u = t2 - t1;
+			DUPLEX_NS_MATH::Vec3 v = t3 - t1;
 
-			Engine::Math::Vec3 normal = u.Cross(v);
+			DUPLEX_NS_MATH::Vec3 normal = u.Cross(v);
 
 			return normal;
 		}
 
-		// Check to see if a Engine::Math::Vec3 Point is within a 3 Engine::Math::Vec3 Triangle
-		bool inTriangle(Engine::Math::Vec3 point, Engine::Math::Vec3 tri1, Engine::Math::Vec3 tri2, Engine::Math::Vec3 tri3)
+		// Check to see if a DUPLEX_NS_MATH::Vec3 Point is within a 3 DUPLEX_NS_MATH::Vec3 Triangle
+		bool inTriangle(DUPLEX_NS_MATH::Vec3 point, DUPLEX_NS_MATH::Vec3 tri1, DUPLEX_NS_MATH::Vec3 tri2, DUPLEX_NS_MATH::Vec3 tri3)
 		{
 			// Test to see if it is within an infinite prism that the triangle outlines.
 			bool within_tri_prisim = SameSide(point, tri1, tri2, tri3) && SameSide(point, tri2, tri1, tri3)
@@ -140,10 +140,10 @@ namespace objl
 				return false;
 
 			// Calulate Triangle's Normal
-			Engine::Math::Vec3 n = GenTriNormal(tri1, tri2, tri3);
+			DUPLEX_NS_MATH::Vec3 n = GenTriNormal(tri1, tri2, tri3);
 
 			// Project the point onto this normal
-			Engine::Math::Vec3 proj = point.Project(n);
+			DUPLEX_NS_MATH::Vec3 proj = point.Project(n);
 
 			// If the distance from the triangle to the point is 0
 			//	it lies on the triangle
@@ -280,9 +280,9 @@ namespace objl
 			LoadedVertices.clear();
 			LoadedIndices.clear();
 
-			std::vector<Engine::Math::Vec3> Positions;
-			std::vector<Engine::Math::Vec2> TCoords;
-			std::vector<Engine::Math::Vec3> Normals;
+			std::vector<DUPLEX_NS_MATH::Vec3> Positions;
+			std::vector<DUPLEX_NS_MATH::Vec2> TCoords;
+			std::vector<DUPLEX_NS_MATH::Vec3> Normals;
 
 			std::vector<Vertex> Vertices;
 			std::vector<unsigned int> Indices;
@@ -375,7 +375,7 @@ namespace objl
 				if (algorithm::firstToken(curline) == "v")
 				{
 					std::vector<std::string> spos;
-					Engine::Math::Vec3 vpos;
+					DUPLEX_NS_MATH::Vec3 vpos;
 					algorithm::split(algorithm::tail(curline), spos, " ");
 
 					vpos.x = std::stof(spos[0]);
@@ -388,7 +388,7 @@ namespace objl
 				if (algorithm::firstToken(curline) == "vt")
 				{
 					std::vector<std::string> stex;
-					Engine::Math::Vec2 vtex;
+					DUPLEX_NS_MATH::Vec2 vtex;
 					algorithm::split(algorithm::tail(curline), stex, " ");
 
 					vtex.x = std::stof(stex[0]);
@@ -400,7 +400,7 @@ namespace objl
 				if (algorithm::firstToken(curline) == "vn")
 				{
 					std::vector<std::string> snor;
-					Engine::Math::Vec3 vnor;
+					DUPLEX_NS_MATH::Vec3 vnor;
 					algorithm::split(algorithm::tail(curline), snor, " ");
 
 					vnor.x = std::stof(snor[0]);
@@ -561,9 +561,9 @@ namespace objl
 		// Generate vertices from a list of positions, 
 		//	tcoords, normals and a face line
 		void GenVerticesFromRawOBJ(std::vector<Vertex>& oVerts,
-			const std::vector<Engine::Math::Vec3>& iPositions,
-			const std::vector<Engine::Math::Vec2>& iTCoords,
-			const std::vector<Engine::Math::Vec3>& iNormals,
+			const std::vector<DUPLEX_NS_MATH::Vec3>& iPositions,
+			const std::vector<DUPLEX_NS_MATH::Vec2>& iTCoords,
+			const std::vector<DUPLEX_NS_MATH::Vec3>& iNormals,
 			std::string icurline)
 		{
 			std::vector<std::string> sface, svert;
@@ -616,7 +616,7 @@ namespace objl
 				case 1: // P
 				{
 					vVert.position = algorithm::getElement(iPositions, svert[0]);
-					vVert.texCoords = Engine::Math::Vec2(0, 0);
+					vVert.texCoords = DUPLEX_NS_MATH::Vec2(0, 0);
 					noNormal = true;
 					oVerts.push_back(vVert);
 					break;
@@ -632,7 +632,7 @@ namespace objl
 				case 3: // P//N
 				{
 					vVert.position = algorithm::getElement(iPositions, svert[0]);
-					vVert.texCoords = Engine::Math::Vec2(0, 0);
+					vVert.texCoords = DUPLEX_NS_MATH::Vec2(0, 0);
 					vVert.normal = algorithm::getElement(iNormals, svert[2]);
 					oVerts.push_back(vVert);
 					break;
@@ -657,10 +657,10 @@ namespace objl
 			// best they get for not compiling a mesh with normals	
 			if (noNormal)
 			{
-				Engine::Math::Vec3 A = oVerts[0].position - oVerts[1].position;
-				Engine::Math::Vec3 B = oVerts[2].position - oVerts[1].position;
+				DUPLEX_NS_MATH::Vec3 A = oVerts[0].position - oVerts[1].position;
+				DUPLEX_NS_MATH::Vec3 B = oVerts[2].position - oVerts[1].position;
 
-				Engine::Math::Vec3 normal = A.Cross(B);
+				DUPLEX_NS_MATH::Vec3 normal = A.Cross(B);
 
 				for (int i = 0; i < int(oVerts.size()); i++)
 				{
@@ -754,7 +754,7 @@ namespace objl
 								oIndices.push_back(j);
 						}
 
-						Engine::Math::Vec3 tempVec;
+						DUPLEX_NS_MATH::Vec3 tempVec;
 						for (int j = 0; j < int(tVerts.size()); j++)
 						{
 							if (tVerts[j].position != pCur.position
@@ -782,7 +782,7 @@ namespace objl
 					}
 
 					// If Vertex is not an interior vertex
-					float angle = (pPrev.position - pCur.position).AngleBetween(pNext.position - pCur.position) * Engine::Math::AngleToDeg();
+					float angle = (pPrev.position - pCur.position).AngleBetween(pNext.position - pCur.position) * DUPLEX_NS_MATH::AngleToDeg();
 					if (angle <= 0 && angle >= 180)
 						continue;
 

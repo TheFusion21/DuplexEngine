@@ -1,6 +1,6 @@
 #include "texture.h"
 
-using namespace Engine::Graphics;
+using namespace DUPLEX_NS_GRAPHICS;
 
 unsigned long Texture::currentTextureMemory = 0;
 

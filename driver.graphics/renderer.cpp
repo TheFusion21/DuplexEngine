@@ -1,10 +1,10 @@
 #include "renderer.h"
 
-using namespace Engine::Graphics;
+using namespace DUPLEX_NS_GRAPHICS;
 
 Renderer* Renderer::mpInstance = nullptr;
 
-ui32 Engine::Graphics::Renderer::PixelSizeFromTextureFormat(TextureFormat format)
+ui32 Renderer::PixelSizeFromTextureFormat(TextureFormat format)
 {
 	switch (format)
 	{

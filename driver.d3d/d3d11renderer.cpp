@@ -17,10 +17,10 @@
 #include "spirv_parser.hpp"
 #include "spirv_hlsl.hpp"
 #include "spirv_reflect.hpp"
-using namespace Engine::Math;
-using namespace Engine::Utils;
+using namespace DUPLEX_NS_MATH;
+using namespace DUPLEX_NS_UTIL;
 using namespace Engine::Components;
-using namespace Engine::Graphics;
+using namespace DUPLEX_NS_GRAPHICS;
 
 
 bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
@@ -245,7 +245,7 @@ bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
 	return true;
 }
 
-void Engine::Graphics::D3D11Renderer::SetViewPort()
+void D3D11Renderer::SetViewPort()
 {
 	D3D11_VIEWPORT viewport
 	{
@@ -259,7 +259,7 @@ void Engine::Graphics::D3D11Renderer::SetViewPort()
 	context->RSSetViewports(1, &viewport);
 }
 
-bool Engine::Graphics::D3D11Renderer::CreateRenderTarget()
+bool D3D11Renderer::CreateRenderTarget()
 {
 	SAFERELEASE(rtv);
 	//Create a texture2D that will represent the screen image
@@ -282,7 +282,7 @@ bool Engine::Graphics::D3D11Renderer::CreateRenderTarget()
 	return true;
 }
 
-bool Engine::Graphics::D3D11Renderer::CreateDepthStencil()
+bool D3D11Renderer::CreateDepthStencil()
 {
 	SAFERELEASE(depthView);
 	//Create a Texture2D with 1 channel that the depth stencil buffer can write to
@@ -320,7 +320,7 @@ bool Engine::Graphics::D3D11Renderer::CreateDepthStencil()
 	return true;
 }
 
-bool Engine::Graphics::D3D11Renderer::Resize(ui32 width, ui32 height)
+bool D3D11Renderer::Resize(ui32 width, ui32 height)
 {
 	context->OMSetRenderTargets(0, 0, 0);
 	SAFERELEASE(rtv);
@@ -645,7 +645,7 @@ void D3D11Renderer::Shutdown()
 	SAFERELEASE(computeSampler);
 }
 
-void D3D11Renderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
+void D3D11Renderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
 {
 	//INPUT ASSEMBLER STAGE
 
@@ -724,17 +724,17 @@ void D3D11Renderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 	worldLocalBuffer.projView = viewProj;
 }
 
-void Engine::Graphics::D3D11Renderer::ClearLights()
+void D3D11Renderer::ClearLights()
 {
 	lights.clear();
 }
 
-void Engine::Graphics::D3D11Renderer::SetLight(Engine::Utils::GpuLight lightDescriptor)
+void D3D11Renderer::SetLight(GpuLight lightDescriptor)
 {
 	lights.push_back(lightDescriptor);
 }
 
-bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()
+bool D3D11Renderer::CheckForFullscreen()
 {
 	BOOL fullscreen;
 	swapChain->GetFullscreenState(&fullscreen, nullptr);
@@ -746,7 +746,7 @@ bool Engine::Graphics::D3D11Renderer::CheckForFullscreen()
 	return false;
 }
 
-IntPtr Engine::Graphics::D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
+IntPtr D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
 {
 	ui32 pitch = PixelSizeFromTextureFormat(format) * width;
 	D3D11_TEXTURE2D_DESC desc = {};
@@ -788,14 +788,14 @@ IntPtr Engine::Graphics::D3D11Renderer::CreateTexture(ui32 width, ui32 height, u
 	return reinterpret_cast<IntPtr>(tex2D);
 }
 
-void Engine::Graphics::D3D11Renderer::ReleaseTexture(IntPtr& texture)
+void D3D11Renderer::ReleaseTexture(IntPtr& texture)
 {
 	ID3D11Texture2D* tex = reinterpret_cast<ID3D11Texture2D*>(texture);
 	SAFERELEASE(tex);
 	texture = nullptr;
 }
 
-void Engine::Graphics::D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
+void D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
 {
 	while (slot >= textureViews.size())
 	{
@@ -805,7 +805,7 @@ void Engine::Graphics::D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr vi
 	
 }
 
-IntPtr Engine::Graphics::D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
+IntPtr D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
 {
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = FromTextureFormat(format);
@@ -820,14 +820,14 @@ IntPtr Engine::Graphics::D3D11Renderer::CreateTextureSRV(IntPtr texture, Texture
 	return reinterpret_cast<IntPtr>(srv);
 }
 
-void Engine::Graphics::D3D11Renderer::ReleaseTextureSRV(IntPtr& srv)
+void D3D11Renderer::ReleaseTextureSRV(IntPtr& srv)
 {
 	ID3D11ShaderResourceView* tex = reinterpret_cast<ID3D11ShaderResourceView*>(srv);
 	SAFERELEASE(tex);
 	srv = nullptr;
 }
 
-IntPtr Engine::Graphics::D3D11Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
+IntPtr D3D11Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
 {
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = FromTextureFormat(format);
@@ -896,14 +896,14 @@ GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data,
 	return reinterpret_cast<GraphicsBufferPtr>(buffer);
 }
 
-void Engine::Graphics::D3D11Renderer::ReleaseBuffer(IntPtr& buffer)
+void D3D11Renderer::ReleaseBuffer(IntPtr& buffer)
 {
 	ID3D11Buffer* b = reinterpret_cast<ID3D11Buffer*>(buffer);
 	SAFERELEASE(b);
 	buffer = nullptr;
 }
 
-DXGI_FORMAT Engine::Graphics::D3D11Renderer::FromTextureFormat(TextureFormat format)
+DXGI_FORMAT D3D11Renderer::FromTextureFormat(TextureFormat format)
 {
 	switch (format)
 	{

@@ -2,8 +2,10 @@
 #include "renderer.h"
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_sdk_platform.h>
+#include "namespaces.h"
+
 #define FRAME_LAG 2
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	class VulkanRenderer : public Renderer
 	{
@@ -52,9 +54,9 @@ namespace Engine::Graphics
 		bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height);
 		void SetViewPort();
 		void CreateShader();
-		void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj);
+		void SetActiveCamera(DUPLEX_NS_MATH::Vec3 eye, DUPLEX_NS_MATH::Mat4x4 viewProj);
 		void ClearLights();
-		void SetLight(Engine::Utils::GpuLight lightDescriptor);
+		void SetLight(DUPLEX_NS_UTIL::GpuLight lightDescriptor);
 		IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
 
 		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format);
@@ -62,7 +64,7 @@ namespace Engine::Graphics
 		void UseTexture(ui32 slot, GraphicsBufferPtr view);
 		void BeginScene();
 		void EndScene();
-		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
+		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
 		void Shutdown();
 		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
 		ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);

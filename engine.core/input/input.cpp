@@ -4,12 +4,13 @@
 #include <iostream>
 
 
-using namespace Engine::Utils;
+using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_MATH;
 
 Input::KeyState* Input::keyStates;
 
-Engine::Math::Vec2 Input::_mousePosition = Engine::Math::Vec2::Zero;
-const Engine::Math::Vec2& Input::mousePosition = Input::_mousePosition;
+Vec2 Input::_mousePosition = Vec2::Zero;
+const Vec2& Input::mousePosition = Input::_mousePosition;
 
 void Input::Init()
 {

@@ -5,8 +5,8 @@
 #endif // !STB_IMAGE_IMPLEMENTATION
 #include "utils/exceptions.h"
 #include "renderer.h"
-using namespace Engine::Graphics;
-using namespace Engine::Utils;
+using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_UTIL;
 
 Cubemap Cubemap::LoadFromFile(const char* filename, bool enableReadWrite)
 {
@@ -156,7 +156,7 @@ Cubemap::Cubemap(ui32 size, CubemapLayout layout, bool enableReadWrite, TextureF
 	}
 }
 
-CubemapLayout Engine::Graphics::Cubemap::FromSizes(ui32 width, ui32 height)
+CubemapLayout Cubemap::FromSizes(ui32 width, ui32 height)
 {
 	//Check for vertical cross
 	{

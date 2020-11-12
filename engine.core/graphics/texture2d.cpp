@@ -7,16 +7,18 @@
 #include "renderer.h"
 #include "utils/util.h"
 #include "math/mathutils.h"
-using namespace Engine::Graphics;
-using namespace Engine::Utils;
-using namespace Engine::Math;
+
+using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_MATH;
+
 
 //Texture2D Texture2D::blackTexture = Texture2D::FromValue(1, 1, false, 0.0f);
 //Texture2D Texture2D::whiteTexture = Texture2D::FromValue(1, 1, false, 1.0f);
 //Texture2D Texture2D::grayTexture = Texture2D::FromValue(1, 1, false, 0.5f);
 //Texture2D Texture2D::normalTexture = Texture2D::FromColor(1, 1, false, FloatColor{ 0.5f, 0.5f, 1.0f, 1.0f });
 
-Texture2D Engine::Graphics::Texture2D::FromColor(ui32 width, ui32 height, bool enableReadWrite, Engine::Utils::FloatColor color)
+Texture2D Texture2D::FromColor(ui32 width, ui32 height, bool enableReadWrite, FloatColor color)
 {
 	Texture2D tex(width, height, enableReadWrite, TextureFormat::RGBAFLOAT);
 
@@ -34,7 +36,7 @@ Texture2D Engine::Graphics::Texture2D::FromColor(ui32 width, ui32 height, bool e
 	return tex;
 }
 
-Texture2D Engine::Graphics::Texture2D::FromValue(ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode)
+Texture2D Texture2D::FromValue(ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode)
 {
 	value = Clamp(value, 0.0f, 1.0f);
 	TextureFormat format;
@@ -61,7 +63,7 @@ Texture2D Engine::Graphics::Texture2D::FromValue(ui32 width, ui32 height, bool e
 	return tex;
 }
 
-Texture2D Engine::Graphics::Texture2D::LoadFromFile(const char* filename, bool enableReadWrite)
+Texture2D Texture2D::LoadFromFile(const char* filename, bool enableReadWrite)
 {
 	FILE* f = stbi__fopen(filename, "rb");
 	if (!f)
@@ -144,7 +146,7 @@ Texture2D Engine::Graphics::Texture2D::LoadFromFile(const char* filename, bool e
 	return tex;
 }
 
-Engine::Graphics::Texture2D::~Texture2D()
+Texture2D::~Texture2D()
 {
 }
 
@@ -193,7 +195,7 @@ Texture2D::Texture2D(ui32 width, ui32 height, bool enableReadWrite, TextureForma
 	this->pitch = width * compSize;
 
 }
-void Engine::Graphics::Texture2D::Resize(ui32 width, ui32 height)
+void Texture2D::Resize(ui32 width, ui32 height)
 {
 	
 }

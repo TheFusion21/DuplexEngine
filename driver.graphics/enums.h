@@ -1,6 +1,7 @@
 #pragma once
+#include "namespaces.h"
 
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	enum class BufferType
 	{

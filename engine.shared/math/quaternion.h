@@ -7,8 +7,9 @@
 #include "types.h"
 #include "vec3.h"
 #include "mathutils.h"
+#include "../namespaces.h"
 
-namespace Engine::Math
+namespace DUPLEX_NS_MATH
 {
 	class Quaternion
 	{

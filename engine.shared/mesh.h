@@ -4,7 +4,7 @@
 // INTERNAL INCLUDES
 #include "vertex.h"
 
-namespace Engine::Resources
+namespace DUPLEX_NS_RESOURCES
 {
 	class Mesh
 	{

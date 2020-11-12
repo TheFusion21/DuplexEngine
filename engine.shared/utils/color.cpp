@@ -1,6 +1,8 @@
 #include "color.h"
 #include <cmath>
-using namespace Engine::Utils;
+
+using namespace DUPLEX_NS_UTIL;
+
 const FloatColor FloatColor::black = { 0.0f, 0.0f, 0.0f, 1.0f };
 const FloatColor FloatColor::grey = { 0.5f, 0.5f, 0.5f, 1.0f };
 const FloatColor FloatColor::white = { 1.0f, 1.0f, 1.0f, 1.0f };

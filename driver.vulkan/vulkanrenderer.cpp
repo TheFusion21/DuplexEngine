@@ -5,8 +5,9 @@
 #include "math/mathutils.h"
 #include "utils\util.h"
 
-using namespace Engine::Graphics;
-using namespace Engine::Math;
+using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_MATH;
+using namespace DUPLEX_NS_UTIL;
 
 #define VK_CHECK(expr) { \
     ASSERT(expr == VK_SUCCESS); \
@@ -129,7 +130,7 @@ void VulkanRenderer::CreateShader()
 {
 }
 
-void VulkanRenderer::SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj)
+void VulkanRenderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
 }
 
@@ -137,7 +138,7 @@ void VulkanRenderer::ClearLights()
 {
 }
 
-void VulkanRenderer::SetLight(Engine::Utils::GpuLight lightDescriptor)
+void VulkanRenderer::SetLight(GpuLight lightDescriptor)
 {
 }
 
@@ -163,7 +164,7 @@ void VulkanRenderer::EndScene()
 {
 }
 
-void VulkanRenderer::Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
+void VulkanRenderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
 {
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "math/vec2.h"
-namespace Engine::Utils
+namespace DUPLEX_NS_UTIL
 {
 	class Input
 	{
@@ -15,9 +15,9 @@ namespace Engine::Utils
 			RELEASED,
 		};
 		static KeyState* keyStates;
-		static Engine::Math::Vec2 _mousePosition;
+		static DUPLEX_NS_MATH::Vec2 _mousePosition;
 	public:
-		static const Engine::Math::Vec2& mousePosition;
+		static const DUPLEX_NS_MATH::Vec2& mousePosition;
 		/// <summary>
 		/// Initilize Input
 		/// </summary>

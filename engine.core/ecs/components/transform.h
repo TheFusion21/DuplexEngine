@@ -6,9 +6,10 @@ namespace Engine::ECS
 	class Transform
 	{
 	public:
-		Engine::Math::Vec3 position = Engine::Math::Vec3::Zero;
-		Engine::Math::Quaternion rotation = Engine::Math::Quaternion::Zero;
-		Engine::Math::Vec3 scale = Engine::Math::Vec3::UnitScale;
+		bool isStatic = false;
+		DUPLEX_NS_MATH::Vec3 position = DUPLEX_NS_MATH::Vec3::Zero;
+		DUPLEX_NS_MATH::Quaternion rotation = DUPLEX_NS_MATH::Quaternion::Zero;
+		DUPLEX_NS_MATH::Vec3 scale = DUPLEX_NS_MATH::Vec3::UnitScale;
 
 		static ui32 GetTypeID()
 		{

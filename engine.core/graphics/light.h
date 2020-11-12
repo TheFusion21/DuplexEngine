@@ -1,7 +1,7 @@
 #pragma once
 #include "utils/color.h"
 #include "math/types.h"
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	
 	struct Light
@@ -15,7 +15,7 @@ namespace Engine::Graphics
 		LightType type = LightType::Directional;
 		//Emission
 
-		Engine::Utils::FloatColor color = Engine::Utils::FloatColor::white;
+		DUPLEX_NS_UTIL::FloatColor color = DUPLEX_NS_UTIL::FloatColor::white;
 		float intensity = 1.0f;
 		float indirectMultiplier = 1.0f;
 

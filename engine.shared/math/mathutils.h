@@ -2,8 +2,9 @@
 
 // INTERNAL INCLUDES
 #include "types.h"
+#include "../namespaces.h"
 
-namespace Engine::Math
+namespace DUPLEX_NS_MATH
 {
 	constexpr real PI = static_cast<real>(3.1415926535897932384626433832795);
 	constexpr real PI_2 = PI / static_cast<real>(2.0);

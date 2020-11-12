@@ -12,9 +12,9 @@ namespace Engine::Components
 	{
 	public:
 		static ComponentType baseType;
-		Engine::Math::Vec3 position;
-		Engine::Math::Quaternion rotation;
-		Engine::Math::Vec3 scale;
+		DUPLEX_NS_MATH::Vec3 position;
+		DUPLEX_NS_MATH::Quaternion rotation;
+		DUPLEX_NS_MATH::Vec3 scale;
 	protected:
 		Transform(GameObject* attach);
 		friend class GameObject;

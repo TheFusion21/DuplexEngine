@@ -14,8 +14,8 @@ namespace Engine::ECS
 			{
 				auto& transform = coord.GetComponent<Transform>(entity);
 				auto& camera = coord.GetComponent<Camera>(entity);
-				Engine::Graphics::Renderer::GetInstancePtr()->SetActiveCamera(transform.position, Engine::Math::Mat4x4::FromPerspectiveFOV(camera.h_fov, 1.7777, camera.nearPlane, camera.farPlane) * Engine::Math::Mat4x4::FromOrientation(transform.rotation) * Engine::Math::Mat4x4::FromView(transform.position));
-				//transform.position += Engine::Math::Vec3::UnitX * Engine::Utils::Time::deltaTime;
+				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->SetActiveCamera(transform.position, DUPLEX_NS_MATH::Mat4x4::FromPerspectiveFOV(camera.h_fov, 1.7777, camera.nearPlane, camera.farPlane) * DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation) * DUPLEX_NS_MATH::Mat4x4::FromView(transform.position));
+				//transform.position += DUPLEX_NS_MATH::Vec3::UnitX * Engine::Utils::Time::deltaTime;
 			}
 		}
 		static ui32 GetTypeID()

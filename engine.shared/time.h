@@ -4,8 +4,9 @@
 #include <chrono>
 // INTERNAL INCLUDES
 #include "math/types.h"
+#include "namespaces.h"
 
-namespace Engine::Utils
+namespace DUPLEX_NS_UTIL
 {
 	enum class TimeType {
 		miliseconds = 1,

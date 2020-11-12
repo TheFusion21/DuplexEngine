@@ -4,7 +4,7 @@
 #include "appinfo.h"
 #include "d3d11renderer.h"
 
-using namespace Engine::Graphics;
+using namespace DUPLEX_NS_GRAPHICS;
 using namespace Engine::Core;
 
 LRESULT WINAPI WinProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

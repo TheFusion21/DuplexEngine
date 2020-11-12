@@ -9,10 +9,10 @@
 #include "graphics/light.h"
 #include "mesh.h"
 using namespace Game::Client;
-using namespace Engine::Graphics;
-using namespace Engine::Math;
-using namespace Engine::Utils;
-using namespace Engine::Resources;
+using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_MATH;
+using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_RESOURCES;
 using namespace Engine::ECS;
 
 void Application::Init()

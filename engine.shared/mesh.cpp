@@ -11,9 +11,9 @@
 #include <string>
 #include "objloader.h"
 using namespace std;
-using namespace Engine::Math;
-using namespace Engine::Utils;
-using namespace Engine::Resources;
+using namespace DUPLEX_NS_MATH;
+using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_RESOURCES;
 
 Mesh Mesh::GenerateQuad()
 {

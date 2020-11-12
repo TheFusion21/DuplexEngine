@@ -14,19 +14,19 @@ namespace Engine::ECS
 			{
 				auto& transform = coord.GetComponent<Transform>(entity);
 				auto& mesh = coord.GetComponent<MeshRenderer>(entity);
-				Engine::Math::Mat4x4 mat = Engine::Math::Mat4x4::FromTranslation(transform.position) * Engine::Math::Mat4x4::FromOrientation(transform.rotation) * Engine::Math::Mat4x4::FromScale(transform.scale);
+				DUPLEX_NS_MATH::Mat4x4 mat = DUPLEX_NS_MATH::Mat4x4::FromTranslation(transform.position) * DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation) * DUPLEX_NS_MATH::Mat4x4::FromScale(transform.scale);
 				for (ui32 i = 0;i<mesh.mesh.subMeshes.size();i++)
 				{
 					if (mesh.materials.size() > i)
 					{
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(0, mesh.materials[i].albedo.GetNativeTexturePtr());
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].metallic.GetNativeTexturePtr());
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].ambientOcclusion.GetNativeTexturePtr());
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(3, mesh.materials[i].roughness.GetNativeTexturePtr());
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(4, mesh.materials[i].normal.GetNativeTexturePtr());
-						Engine::Graphics::Renderer::GetInstancePtr()->UseTexture(5, mesh.materials[i].emission.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(0, mesh.materials[i].albedo.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].metallic.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].ambientOcclusion.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(3, mesh.materials[i].roughness.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(4, mesh.materials[i].normal.GetNativeTexturePtr());
+						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(5, mesh.materials[i].emission.GetNativeTexturePtr());
 					}
-					Engine::Graphics::Renderer::GetInstancePtr()->Render(mat, mesh.vertexBuffers[i], mesh.indexBuffers[i], mesh.indexCounts[i]);
+					DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->Render(mat, mesh.vertexBuffers[i], mesh.indexBuffers[i], mesh.indexCounts[i]);
 				}
 			}
 		}

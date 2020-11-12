@@ -1,7 +1,7 @@
 #include "Time.h"
 #include "math/mathutils.h"
-using namespace Engine::Utils;
-using namespace Engine::Math;
+using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_MATH;
 
 void Timer::Start()
 {

@@ -1,7 +1,8 @@
 #pragma once
 #include <exception>
 #include <string>
-namespace Engine::Utils
+#include "namespaces.h"
+namespace DUPLEX_NS_UTIL
 {
 	class NoFileException : public std::exception
 	{

@@ -1,4 +1,4 @@
-﻿# define project
+# define project
 project(engine.shared C CXX)
 SET(TARGET_NAME engine.shared)
 
@@ -10,6 +10,7 @@ target_sources(
     ${TARGET_NAME}
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/appinfo.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/namespaces.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/vertex.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/time.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.h"

@@ -1,3 +1,3 @@
 #include "light.h"
 
-using namespace Engine::Graphics;
+using namespace DUPLEX_NS_GRAPHICS;

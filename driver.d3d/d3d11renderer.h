@@ -6,7 +6,7 @@
 // INTERNAL INCLUDES
 #include "renderer.h"
 
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	class D3D11Renderer : public Renderer
 	{
@@ -39,9 +39,9 @@ namespace Engine::Graphics
 
 		ID3D11BlendState* blendState = nullptr;
 		//Camera
-		Engine::Utils::worldConstant worldLocalBuffer;
+		DUPLEX_NS_UTIL::worldConstant worldLocalBuffer;
 		GraphicsBufferPtr worldBuffer = nullptr;
-		std::vector<Engine::Utils::GpuLight> lights;
+		std::vector<DUPLEX_NS_UTIL::GpuLight> lights;
 		
 
 		ID3D11Debug* debug = nullptr;
@@ -80,17 +80,17 @@ namespace Engine::Graphics
 		/// Release and clear/delete previously created pointers and exit fullscreen if required
 		/// </summary>
 		void Shutdown();
-		//void RenderObject(Engine::Math::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
-		void Render(Engine::Math::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
+		//void RenderObject(DUPLEX_NS_MATH::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
+		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
 		/// <summary>
 		/// Assign a camera to be used for rendering
 		/// </summary>
 		/// <param name="camera"></param>
-		void SetActiveCamera(Engine::Math::Vec3 eye, Engine::Math::Mat4x4 viewProj);
+		void SetActiveCamera(DUPLEX_NS_MATH::Vec3 eye, DUPLEX_NS_MATH::Mat4x4 viewProj);
 
 		void ClearLights();
 
-		void SetLight(Engine::Utils::GpuLight lightDescriptor);
+		void SetLight(DUPLEX_NS_UTIL::GpuLight lightDescriptor);
 
 		bool CheckForFullscreen();
 

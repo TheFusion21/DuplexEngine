@@ -19,12 +19,12 @@ namespace Engine::ECS
 		{
 			//for (GraphicsBufferPtr& vb : vertexBuffers)
 			//{
-			//	Engine::Graphics::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
+			//	DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
 			//}
 			//vertexBuffers.clear();
 			//for (GraphicsBufferPtr& ib : indexBuffers)
 			//{
-			//	Engine::Graphics::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
+			//	DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
 			//}
 			//indexBuffers.clear();
 			//indexCounts.clear();
@@ -37,20 +37,20 @@ namespace Engine::ECS
 			this->mesh = mesh;
 			for (GraphicsBufferPtr& vb : vertexBuffers)
 			{
-				Engine::Graphics::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
+				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
 			}
 			vertexBuffers.clear();
 			for (GraphicsBufferPtr& ib : indexBuffers)
 			{
-				Engine::Graphics::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
+				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
 			}
 			indexBuffers.clear();
 			indexCounts.clear();
 			for (Engine::Resources::Mesh::SubMesh sm : this->mesh.subMeshes)
 			{
-				GraphicsBufferPtr vb = Engine::Graphics::Renderer::GetInstancePtr()->CreateBuffer(Engine::Graphics::BufferType::Vertex, sm.vertices.data(), static_cast<ui32>(sm.vertices.size()) * sizeof(Vertex));
+				GraphicsBufferPtr vb = DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Vertex, sm.vertices.data(), static_cast<ui32>(sm.vertices.size()) * sizeof(Vertex));
 				vertexBuffers.push_back(vb);
-				GraphicsBufferPtr ib = Engine::Graphics::Renderer::GetInstancePtr()->CreateBuffer(Engine::Graphics::BufferType::Index, sm.indices.data(), static_cast<ui32>(sm.indices.size()) * sizeof(ui32));
+				GraphicsBufferPtr ib = DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Index, sm.indices.data(), static_cast<ui32>(sm.indices.size()) * sizeof(ui32));
 				indexBuffers.push_back(ib);
 				indexCounts.push_back(static_cast<ui32>(sm.indices.size()));
 			}
@@ -59,13 +59,13 @@ namespace Engine::ECS
 		{
 			return 2;
 		}
-		std::vector< Engine::Graphics::BsdfMaterial> materials;
+		std::vector< DUPLEX_NS_GRAPHICS::BsdfMaterial> materials;
 		Engine::Resources::Mesh mesh;
 	private:
 		std::vector<GraphicsBufferPtr> vertexBuffers;
 		std::vector<GraphicsBufferPtr> indexBuffers;
 		std::vector<ui32> indexCounts;
-		//friend class Engine::Graphics::D3D11Renderer;
+		//friend class DUPLEX_NS_GRAPHICS::D3D11Renderer;
 	protected:
 		friend class MeshSystem;
 	};

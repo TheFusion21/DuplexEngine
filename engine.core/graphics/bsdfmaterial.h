@@ -1,7 +1,7 @@
 #pragma once
 #include "texture2d.h"
 
-namespace Engine::Graphics
+namespace DUPLEX_NS_GRAPHICS
 {
 	enum class SurfaceType
 	{

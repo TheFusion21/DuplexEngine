@@ -1,7 +1,8 @@
 #pragma once
 #include "math/types.h"
 #include "enums.h"
-namespace Engine::Graphics
+#include "namespaces.h"
+namespace DUPLEX_NS_GRAPHICS
 {
 	enum class TextureDimension
 	{

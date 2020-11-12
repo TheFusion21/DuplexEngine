@@ -6,8 +6,9 @@
 #include <cassert>
 // INTERNAL INCLUDES
 #include "types.h"
+#include "../namespaces.h"
 
-namespace Engine::Math
+namespace DUPLEX_NS_MATH
 {
 	class Vec2
 	{

@@ -1,4 +1,4 @@
-# define project
+﻿# define project
 project(engine.shared C CXX)
 SET(TARGET_NAME engine.shared)
 
@@ -10,6 +10,7 @@ target_sources(
     ${TARGET_NAME}
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/appinfo.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/results.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/namespaces.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/vertex.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/time.h"
@@ -17,6 +18,7 @@ target_sources(
         
 
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2int.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec3.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/mat4x4.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/mathutils.h"
@@ -38,6 +40,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2int.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec3.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/mat4x4.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/quaternion.cpp"

@@ -1,6 +1,6 @@
-﻿# define project
-project(DuplexEngine C CXX)
-SET(TARGET_NAME DuplexEngine)
+# define project
+project(DuplexEngine.Editor C CXX)
+SET(TARGET_NAME DuplexEngine.Editor)
 
 cmake_minimum_required (VERSION 3.9)
 
@@ -11,12 +11,10 @@ add_executable(${TARGET_NAME} "../res/appicon.ico" "../res/resources.rc")
 target_sources(
     ${TARGET_NAME}
     PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/client.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/appwindow.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/editor.h"
     PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/editor.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/client.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/appwindow.cpp"
 )
 
 # set additional target properties
@@ -25,9 +23,13 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFI
 # link libraries against the target
 target_link_libraries(${TARGET_NAME}
     engine.core
+    engine.window
+    engine.config
 )
 
 # additional includes for target
 target_include_directories(${TARGET_NAME} PRIVATE
 	"${CMAKE_SOURCE_DIR}/engine.core"
+	"${CMAKE_SOURCE_DIR}/engine.window"
+	"${CMAKE_SOURCE_DIR}/engine.config"
 )

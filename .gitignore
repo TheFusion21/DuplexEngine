@@ -36,5 +36,6 @@
 /.vscode
 /_ReSharper.Caches
 /CMakeSettings.json
+/lib
 
 bin/

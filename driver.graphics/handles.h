@@ -84,6 +84,19 @@ namespace DUPLEX_NS_GRAPHICS
 			return slots[handle.index].resource;
 		}
 
+		// Visits every still-alive resource, in slot order - for backends (e.g. VMA-backed
+		// ones) that need to explicitly destroy every outstanding resource on shutdown rather
+		// than relying on handle owners to have released them all individually first.
+		template<typename Fn>
+		void ForEachAlive(Fn&& fn) const
+		{
+			for (const Slot& slot : slots)
+			{
+				if (slot.alive)
+					fn(slot.resource);
+			}
+		}
+
 	private:
 		struct Slot
 		{

@@ -13,6 +13,7 @@ target_sources(
 
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/vulkanrenderer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/vma_impl.cpp"
 )
 
 # set additional target properties
@@ -26,4 +27,5 @@ target_link_libraries(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.graphics"
+	"${CMAKE_SOURCE_DIR}/engine.vma/include"
 )

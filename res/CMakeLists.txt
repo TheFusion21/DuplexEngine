@@ -20,7 +20,14 @@ function(compile_hlsl_shader SRC PROFILE ENTRY)
     set(OUT "${SHADER_OUTPUT_DIR}/${SHADER_NAME}.spirv")
     add_custom_command(
         OUTPUT "${OUT}"
-        COMMAND "${DXC_EXECUTABLE}" -spirv -T ${PROFILE} -E ${ENTRY} "${SRC}" -Fo "${OUT}"
+        # -fvk-t-shift/-fvk-s-shift: without them, DXC assigns SPIR-V binding numbers
+        # per HLSL register class independently, so t0/s0/b0 all land on binding 0 and
+        # collide in a single Vulkan descriptor set (verified directly via spirv-cross
+        # --reflect - this isn't visible from the D3D11 path at all, since D3D11 binds by
+        # explicit slot index and never looks at these register numbers). Shifting t/s out
+        # of the way of the untouched b0/b1 cbuffer bindings makes every resource's binding
+        # number unique: cbuffers at 0-1, textures at 10+, samplers at 20+.
+        COMMAND "${DXC_EXECUTABLE}" -spirv -T ${PROFILE} -E ${ENTRY} -fvk-t-shift 10 0 -fvk-s-shift 20 0 "${SRC}" -Fo "${OUT}"
         DEPENDS "${SRC}" "${CMAKE_CURRENT_SOURCE_DIR}/structures.hlsl"
         COMMENT "Compiling shader ${SHADER_NAME} (${PROFILE})"
         VERBATIM

@@ -363,7 +363,7 @@ void D3D11Renderer::CreateShader()
 	ID3DBlob* pixelSDFShaderBlob = nullptr;
 	
 	{
-		FILE* file = fopen("./data/shd/bsdfVertex.spirv", "rb");
+		FILE* file = fopen("./bin/data/shd/bsdfVertex.spirv", "rb");
 		if (file == nullptr)
 		{
 			throw std::string("bsdfVertex shader now found");
@@ -406,7 +406,7 @@ void D3D11Renderer::CreateShader()
 		printf("oooh yeah");
 	}
 	{
-		FILE* file = fopen("./data/shd/bsdfPixel.spirv", "rb");
+		FILE* file = fopen("./bin/data/shd/bsdfPixel.spirv", "rb");
 		if (file == nullptr)
 		{
 			throw std::string("bsdfPixel shader now found");
@@ -443,7 +443,7 @@ void D3D11Renderer::CreateShader()
 		printf("oooh yeah");
 	}
 	{
-		FILE* file = fopen("./data/shd/pixelSDFDefault.spirv", "rb");
+		FILE* file = fopen("./bin/data/shd/pixelSDFDefault.spirv", "rb");
 		if (file == nullptr)
 		{
 			throw std::string("SDFPixel shader now found");

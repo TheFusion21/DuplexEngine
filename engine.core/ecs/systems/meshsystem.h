@@ -19,9 +19,15 @@ namespace Engine::ECS
 				{
 					if (mesh.materials.size() > i)
 					{
+						// Slots match the BSDF pixel shader's register(tN) slots (see bsdfPixel.hlsl):
+						// t0 albedo, t1 metallic, t2 occlusion, t3 roughness, t4 normal, t5 emission.
+						// ambientOcclusion previously also targeted slot 1, silently overwriting
+						// metallic right after it was set - _Metallic.Sample() in the shader was
+						// actually reading the AO texture. (t2/_Occlusion is declared in the shader
+						// but never sampled, so this was invisible until the texture came out wrong.)
 						renderer.UseTexture(0, mesh.materials[i].albedo.GetShaderResourceView());
 						renderer.UseTexture(1, mesh.materials[i].metallic.GetShaderResourceView());
-						renderer.UseTexture(1, mesh.materials[i].ambientOcclusion.GetShaderResourceView());
+						renderer.UseTexture(2, mesh.materials[i].ambientOcclusion.GetShaderResourceView());
 						renderer.UseTexture(3, mesh.materials[i].roughness.GetShaderResourceView());
 						renderer.UseTexture(4, mesh.materials[i].normal.GetShaderResourceView());
 						renderer.UseTexture(5, mesh.materials[i].emission.GetShaderResourceView());

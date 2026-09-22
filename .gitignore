@@ -2,10 +2,13 @@
 *.d
 
 # Compiled Object files
+# NOTE: *.obj deliberately excluded here - it collides with Wavefront .obj mesh assets
+# (e.g. data/mdls/**/*.obj) and silently blocked one from ever being committed. All real
+# compiled .obj output already lands under /build (ignored below), so this isn't needed
+# for its original purpose either.
 *.slo
 *.lo
 *.o
-*.obj
 
 # Precompiled Headers
 *.gch

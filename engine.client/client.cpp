@@ -79,29 +79,25 @@ void Application::Init()
 	coordinator.AddComponent(camera, camTransform);
 	coordinator.AddComponent(camera, Camera());
 
-	cube = coordinator.CreateEntity();
-	Transform cubeTransform;
-	cubeTransform.position.y = static_cast<real>(-1.5);
-	cubeTransform.scale = Vec3::UnitScale * static_cast<real>(2.0);
-	coordinator.AddComponent(cube, cubeTransform);
-	coordinator.AddComponent(cube, MeshRenderer());
-	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(*renderer, Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
-	BsdfMaterial uv_1(*renderer);
-	uv_1.albedo = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
-	uv_1.metallic = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
-	uv_1.roughness = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
-	uv_1.ambientOcclusion = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
-	uv_1.normal = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
-	uv_1.emission = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
-	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_1);
-	BsdfMaterial uv_2(*renderer);
-	uv_2.albedo = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
-	uv_2.metallic = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
-	uv_2.roughness = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
-	uv_2.ambientOcclusion = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
-	uv_2.normal = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
-	uv_2.emission = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
-	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_2);
+	prop = coordinator.CreateEntity();
+	Transform propTransform;
+	propTransform.position.y = static_cast<real>(-1.5);
+	// BoomBox.obj is modeled at real-world scale (~0.02m across, glTF's convention) - scaled
+	// up here rather than re-exporting the mesh, so it reads at roughly the same size the old
+	// SK_Bio_Mutant placeholder did at this camera distance.
+	propTransform.scale = Vec3::UnitScale * static_cast<real>(80.0);
+	coordinator.AddComponent(prop, propTransform);
+	coordinator.AddComponent(prop, MeshRenderer());
+	coordinator.GetComponent<MeshRenderer>(prop).SetMesh(*renderer, Mesh::LoadOBJ("./data/mdls/BoomBox/BoomBox.obj"));
+	// CC0, from Khronos' glTF-Sample-Assets (Models/BoomBox) - see data/mdls/BoomBox/CREDITS.md.
+	BsdfMaterial boomBoxMaterial(*renderer);
+	boomBoxMaterial.albedo = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_albedo.png", false);
+	boomBoxMaterial.metallic = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_metallic.png", false);
+	boomBoxMaterial.roughness = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_roughness.png", false);
+	boomBoxMaterial.ambientOcclusion = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_occlusion.png", false);
+	boomBoxMaterial.normal = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_normal.png", false);
+	boomBoxMaterial.emission = Texture2D::LoadFromFile(*renderer, "./data/mdls/BoomBox/BoomBox_emissive.png", false);
+	coordinator.GetComponent<MeshRenderer>(prop).materials.push_back(boomBoxMaterial);
 
 	dirLight = coordinator.CreateEntity();
 	coordinator.AddComponent(dirLight, Light());
@@ -130,7 +126,7 @@ void Application::Run()
 		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
 
-		Transform& t2 = coordinator.GetComponent<Transform>(cube);
+		Transform& t2 = coordinator.GetComponent<Transform>(prop);
 		t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
 		Time::Update();
 	}

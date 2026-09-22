@@ -30,7 +30,7 @@ namespace Game::Client
 		std::shared_ptr<Engine::ECS::CameraSystem> camSystem;
 		std::shared_ptr<Engine::ECS::MeshSystem> meshSystem;
 		std::shared_ptr<Engine::ECS::LightSystem> lightSystem;
-		Engine::ECS::Entity cube;
+		Engine::ECS::Entity prop;
 		Engine::ECS::Entity dirLight;
 
 	public:

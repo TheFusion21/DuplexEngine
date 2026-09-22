@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  linux-vulkan:
+    name: Linux (Vulkan)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Provides both the Vulkan SDK (headers/loader, used by driver.vulkan) and dxc, which
+      # res/CMakeLists.txt uses to compile the HLSL shaders to SPIR-V.
+      - name: Install Vulkan SDK (includes dxc)
+        run: |
+          wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo tee /etc/apt/trusted.gpg.d/lunarg.asc > /dev/null
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt-get update
+          sudo apt-get install -y vulkan-sdk
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+  windows-d3d-vulkan:
+    name: Windows (D3D11 / D3D12 / Vulkan)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Full LunarG Vulkan SDK (same version as the Linux job) - it also bundles dxc.exe,
+      # which res/CMakeLists.txt needs to compile the HLSL shaders to SPIR-V.
+      - name: Install Vulkan SDK (includes dxc)
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.3.268.0
+          cache: true
+
+      - name: Add dxc to PATH
+        shell: pwsh
+        run: |
+          $dxcDir = "$env:VULKAN_SDK\Bin"
+          if (-not (Test-Path "$dxcDir\dxc.exe")) {
+            throw "dxc.exe not found under $dxcDir - Vulkan SDK layout may have changed."
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value $dxcDir
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build --config Debug
+
+      # test_vulkan_bringup needs a real Vulkan ICD (GPU driver or software rasterizer),
+      # which GitHub's Windows runners don't provide, so it's excluded here. The other two
+      # tests are pure logic and run fine headless.
+      - name: Test
+        working-directory: build
+        run: ctest -C Debug --output-on-failure -E vulkan_bringup

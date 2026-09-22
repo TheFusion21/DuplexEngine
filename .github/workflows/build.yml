@@ -26,6 +26,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y vulkan-sdk
 
+      # The SDK only provides the loader, not a driver. GitHub's runners have no GPU, so
+      # vkCreateInstance/vkEnumeratePhysicalDevices need a software ICD to find anything -
+      # Mesa's llvmpipe (lavapipe) fills that role headlessly.
+      - name: Install software Vulkan driver (lavapipe)
+        run: sudo apt-get install -y mesa-vulkan-drivers
+
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 
@@ -45,12 +51,15 @@ jobs:
         with:
           submodules: recursive
 
-      # Full LunarG Vulkan SDK (same version as the Linux job) - it also bundles dxc.exe,
-      # which res/CMakeLists.txt needs to compile the HLSL shaders to SPIR-V.
+      # Full LunarG Vulkan SDK - it also bundles dxc.exe, which res/CMakeLists.txt needs to
+      # compile the HLSL shaders to SPIR-V. NOTE: the version must be one LunarG actually
+      # published a Windows installer for - 1.3.268.0 (matched to the Linux job's Ubuntu
+      # package) turned out to be an Ubuntu-packaging-only RC that was never released as a
+      # Windows build (404). 1.3.296.0 is confirmed to exist for Windows.
       - name: Install Vulkan SDK (includes dxc)
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          version: 1.3.268.0
+          version: 1.3.296.0
           cache: true
 
       - name: Add dxc to PATH

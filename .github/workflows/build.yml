@@ -32,8 +32,12 @@ jobs:
       - name: Install software Vulkan driver (lavapipe)
         run: sudo apt-get install -y mesa-vulkan-drivers
 
+      # engine.spirv (the vendored SPIRV-Cross submodule) declares a cmake_minimum_required
+      # far below what current CMake still accepts; CMAKE_POLICY_VERSION_MINIMUM is CMake's
+      # own documented escape hatch for exactly this (set externally, not in our CMakeLists.txt
+      # - see https://cmake.org/cmake/help/latest/variable/CMAKE_POLICY_VERSION_MINIMUM.html).
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: Build
         run: cmake --build build -j"$(nproc)"
@@ -72,7 +76,7 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value $dxcDir
 
       - name: Configure
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: Build
         run: cmake --build build --config Debug

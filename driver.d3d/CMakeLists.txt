@@ -18,9 +18,15 @@ target_sources(
 # set additional target properties
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")
 
+# d3d11.lib/dxgi.lib for the D3D11/DXGI API (<d3d11.h>/<dxgi.h>) and d3dcompiler.lib for
+# D3DCompile (<d3dcompiler.h>) - previously missing, so anything actually linking driver.d3d
+# failed with unresolved externals for D3D11CreateDeviceAndSwapChain/D3DCompile.
 target_link_libraries(${TARGET_NAME}
     driver.graphics
     spirv-cross-hlsl
+    d3d11.lib
+    dxgi.lib
+    d3dcompiler.lib
 )
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.graphics"

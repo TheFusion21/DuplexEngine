@@ -12,14 +12,12 @@
 #include "math/mat4x4.h"
 #include "utils/color.h"
 #include "vertex.h"
-#include "transform.h"
 #include "spirv_cpp.hpp"
 #include "spirv_parser.hpp"
 #include "spirv_hlsl.hpp"
 #include "spirv_reflect.hpp"
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
-using namespace Engine::Components;
 using namespace DUPLEX_NS_GRAPHICS;
 
 

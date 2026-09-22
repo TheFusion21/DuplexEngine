@@ -33,6 +33,7 @@
 
 /.vs
 /out
+/build
 /.vscode
 /_ReSharper.Caches
 /CMakeSettings.json

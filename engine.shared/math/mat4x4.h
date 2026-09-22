@@ -126,6 +126,7 @@ namespace DUPLEX_NS_MATH
 			this->m42 *= rhs;
 			this->m43 *= rhs;
 			this->m44 *= rhs;
+			return *this;
 		}
 		
 		inline Mat4x4 operator+(const Mat4x4& v) const

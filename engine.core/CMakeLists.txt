@@ -41,8 +41,6 @@ target_sources(
 
 
     PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/input/input.cpp"
-
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/texture2d.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/cubemap.cpp"
@@ -52,14 +50,34 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/component.cpp"
 )
 
+# input.cpp polls input via raw Win32 (GetAsyncKeyState/GetCursorPos) - Windows-only until
+# it's replaced with SDL2 input handling. input.h itself has no platform dependency and stays
+# available everywhere; only the implementation is gated.
+if(WIN32)
+    target_sources(${TARGET_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/input/input.cpp"
+    )
+endif()
+
 # set additional target properties
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")
 
 target_link_libraries(${TARGET_NAME}
-    driver.d3d
     driver.vulkan
 )
 target_include_directories(${TARGET_NAME} PUBLIC
-	"${CMAKE_SOURCE_DIR}/driver.d3d"
 	"${CMAKE_SOURCE_DIR}/driver.vulkan"
 )
+
+# D3D11/D3D12 are Windows-only backends; engine.core stays buildable on other
+# platforms with Vulkan alone.
+if(WIN32)
+    target_link_libraries(${TARGET_NAME}
+        driver.d3d
+        driver.d3d12
+    )
+    target_include_directories(${TARGET_NAME} PUBLIC
+        "${CMAKE_SOURCE_DIR}/driver.d3d"
+        "${CMAKE_SOURCE_DIR}/driver.d3d12"
+    )
+endif()

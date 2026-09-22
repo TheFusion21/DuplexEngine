@@ -21,7 +21,7 @@
     #include <intrin.h>
     #define debugBreak() __debugbreak();
     #else
-    #define debugBreak() __asm { int 3 }
+    #define debugBreak() __builtin_trap();
     #endif
 
     #define ASSERT(expr) { \

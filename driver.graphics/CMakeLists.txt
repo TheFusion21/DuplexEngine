@@ -23,6 +23,7 @@ target_link_libraries(${TARGET_NAME}
     engine.shared
 )
 target_include_directories(${TARGET_NAME} PUBLIC
+	"${CMAKE_CURRENT_SOURCE_DIR}"
 	"${CMAKE_SOURCE_DIR}/engine.shared"
     "${Vulkan_INCLUDE_DIR}"
 

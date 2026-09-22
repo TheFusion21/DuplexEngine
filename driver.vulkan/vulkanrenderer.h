@@ -1,7 +1,6 @@
 #pragma once
 #include "renderer.h"
 #include <vulkan/vulkan.h>
-#include <vulkan/vk_sdk_platform.h>
 #include "namespaces.h"
 
 #define FRAME_LAG 2
@@ -67,7 +66,6 @@ namespace DUPLEX_NS_GRAPHICS
 		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
 		void Shutdown();
 		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
-		ShaderResourcePtr CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc);
 		bool Resize(ui32 width, ui32 height);
 		bool CheckForFullscreen();
 

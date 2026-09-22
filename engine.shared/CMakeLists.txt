@@ -13,7 +13,7 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/results.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/namespaces.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/vertex.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/time.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.h"
         
 
@@ -36,7 +36,7 @@ target_sources(
         # "${CMAKE_CURRENT_SOURCE_DIR}/utils/singleton.h"
 
     PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/time.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2.cpp"
@@ -51,3 +51,11 @@ target_sources(
 )
 # set additional target properties
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")
+
+# engine.shared's own headers reference each other by root-relative path (e.g.
+# utils/exceptions.h includes "namespaces.h", not "../namespaces.h"), so its own root needs
+# to be on the include path - both for compiling engine.shared itself and for consumers,
+# most of which already add this manually today.
+target_include_directories(${TARGET_NAME} PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)

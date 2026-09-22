@@ -1,14 +1,12 @@
 #pragma once
 // EXTERNAL INCLUDES
-#include <d3dcompiler.h>
-#include <d3d11.h>
 // INTERNAL INCLUDES
 #include "component.h"
 #include "math/types.h"
 #include "mesh.h"
 #include "graphics/stb_image.h"
 #include "utils/util.h"
-#include "d3d11renderer.h"
+#include "renderer.h"
 #include "graphics/bsdfmaterial.h"
 namespace Engine::ECS
 {

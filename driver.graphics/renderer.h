@@ -1,9 +1,5 @@
 #pragma once
 
-#include <dxgi.h>
-#include <d3d11.h>
-
-#include "gameobject.h"
 #include "math/types.h"
 #include "enums.h"
 #include "mesh.h"
@@ -20,8 +16,12 @@ namespace DUPLEX_NS_GRAPHICS
 		BOOL wireFrame = false;
 		Renderer() { }
 		static Renderer* mpInstance;
-		Renderer(const Renderer&) { }
-		Renderer& operator=(const Renderer&) { }
+		// Renderer is a polymorphic singleton managed through mpInstance; copying a base-class
+		// instance by value would slice the concrete backend anyway, so make that explicit
+		// instead of the previous empty-body implementations (which silently discarded the
+		// source object and, for operator=, fell off the end without returning *this).
+		Renderer(const Renderer&) = delete;
+		Renderer& operator=(const Renderer&) = delete;
 		ui32 width = 0, height = 0;
 	public:
 		

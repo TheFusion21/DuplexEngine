@@ -1,5 +1,5 @@
-#include "Input.h"
-#include "utils/Util.h"
+#include "input.h"
+#include "utils/util.h"
 #include <windows.h>
 #include <iostream>
 

@@ -1,5 +1,6 @@
-#include "Time.h"
+#include "enginetime.h"
 #include "math/mathutils.h"
+#include <cmath>
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_MATH;
 

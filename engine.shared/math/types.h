@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <climits>
 
 typedef int8_t  i8;
 typedef int16_t i16;

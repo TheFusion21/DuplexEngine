@@ -14,10 +14,9 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Vulkan is located via the standard FindVulkan module (CMAKE_PREFIX_PATH / VULKAN_SDK env
+# var), which works the same way on Windows and Linux - see the top-level find_package(Vulkan).
 
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH};${VULKAN_HEADERS_INSTALL_DIR};${VULKAN_LOADER_INSTALL_DIR};
-                       $ENV{VULKAN_HEADERS_INSTALL_DIR};$ENV{VULKAN_LOADER_INSTALL_DIR})
-set(VULKAN_HEADERS_INSTALL_DIR "VULKAN-HEADERS-NOTFOUND" CACHE PATH "Absolute path to a Vulkan-Headers install directory")
 # set output directories
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/lib)

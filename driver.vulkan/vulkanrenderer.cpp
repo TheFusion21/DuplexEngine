@@ -3,7 +3,8 @@
 #include "math/vec2.h"
 #include "math/mat4x4.h"
 #include "math/mathutils.h"
-#include "utils\util.h"
+#include "utils/util.h"
+#include <cstring>
 
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
@@ -177,11 +178,6 @@ GraphicsBufferPtr VulkanRenderer::CreateBuffer(BufferType type, const void* data
 	return nullptr;
 }
 
-
-ShaderResourcePtr VulkanRenderer::CreateShaderResource(GraphicsBufferPtr resource, D3D11_SHADER_RESOURCE_VIEW_DESC* desc)
-{
-	return nullptr;
-}
 
 bool VulkanRenderer::Resize(ui32 width, ui32 height)
 {

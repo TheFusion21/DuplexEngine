@@ -56,22 +56,24 @@ namespace DUPLEX_NS_GRAPHICS
 		void SetActiveCamera(DUPLEX_NS_MATH::Vec3 eye, DUPLEX_NS_MATH::Mat4x4 viewProj);
 		void ClearLights();
 		void SetLight(DUPLEX_NS_UTIL::GpuLight lightDescriptor);
-		IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
+		TextureHandle CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
 
-		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format);
+		ShaderResourceViewHandle CreateTextureSRV(TextureHandle texture, TextureFormat format);
 
-		void UseTexture(ui32 slot, GraphicsBufferPtr view);
+		void UseTexture(ui32 slot, ShaderResourceViewHandle view);
 		void BeginScene();
 		void EndScene();
-		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
+		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount);
 		void Shutdown();
-		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
+		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
 		bool Resize(ui32 width, ui32 height);
 		bool CheckForFullscreen();
 
-		void ReleaseTexture(IntPtr& texture);
-		void ReleaseTextureSRV(IntPtr& srv);
-		void ReleaseBuffer(IntPtr& buffer);
+		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle cubemap, TextureFormat format);
+
+		void ReleaseTexture(TextureHandle& texture);
+		void ReleaseTextureSRV(ShaderResourceViewHandle& srv);
+		void ReleaseBuffer(BufferHandle& buffer);
 	private:
 		struct VulkanSwapchainSupportDetails {
 			VkSurfaceCapabilitiesKHR capabilities;

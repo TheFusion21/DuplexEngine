@@ -43,7 +43,7 @@ void D3D12Renderer::EndScene()
 {
 }
 
-void D3D12Renderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
+void D3D12Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount)
 {
 }
 
@@ -51,28 +51,28 @@ void D3D12Renderer::Shutdown()
 {
 }
 
-IntPtr D3D12Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
+TextureHandle D3D12Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
 {
-	return nullptr;
+	return TextureHandle{};
 }
 
-IntPtr D3D12Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
+ShaderResourceViewHandle D3D12Renderer::CreateTextureSRV(TextureHandle texture, TextureFormat format)
 {
-	return nullptr;
+	return ShaderResourceViewHandle{};
 }
 
-void D3D12Renderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
+void D3D12Renderer::UseTexture(ui32 slot, ShaderResourceViewHandle view)
 {
 }
 
-IntPtr D3D12Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
+ShaderResourceViewHandle D3D12Renderer::CreateCubemapSRV(TextureHandle cubemap, TextureFormat format)
 {
-	return nullptr;
+	return ShaderResourceViewHandle{};
 }
 
-GraphicsBufferPtr D3D12Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
+BufferHandle D3D12Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
 {
-	return nullptr;
+	return BufferHandle{};
 }
 
 bool D3D12Renderer::Resize(ui32 width, ui32 height)
@@ -85,14 +85,14 @@ bool D3D12Renderer::CheckForFullscreen()
 	return false;
 }
 
-void D3D12Renderer::ReleaseTexture(IntPtr& texture)
+void D3D12Renderer::ReleaseTexture(TextureHandle& texture)
 {
 }
 
-void D3D12Renderer::ReleaseTextureSRV(IntPtr& srv)
+void D3D12Renderer::ReleaseTextureSRV(ShaderResourceViewHandle& srv)
 {
 }
 
-void D3D12Renderer::ReleaseBuffer(IntPtr& buffer)
+void D3D12Renderer::ReleaseBuffer(BufferHandle& buffer)
 {
 }

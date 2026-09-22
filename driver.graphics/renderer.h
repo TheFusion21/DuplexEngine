@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/types.h"
+#include "handles.h"
 #include "enums.h"
 #include "mesh.h"
 #include "shadercb.h"
@@ -15,25 +16,17 @@ namespace DUPLEX_NS_GRAPHICS
 		BOOL vsyncEnable = true;
 		BOOL wireFrame = false;
 		Renderer() { }
-		static Renderer* mpInstance;
-		// Renderer is a polymorphic singleton managed through mpInstance; copying a base-class
-		// instance by value would slice the concrete backend anyway, so make that explicit
-		// instead of the previous empty-body implementations (which silently discarded the
-		// source object and, for operator=, fell off the end without returning *this).
+		// Copying a base-class Renderer by value would slice the concrete backend, so that's
+		// explicitly disallowed rather than silently doing the wrong thing.
 		Renderer(const Renderer&) = delete;
 		Renderer& operator=(const Renderer&) = delete;
 		ui32 width = 0, height = 0;
 	public:
-		
-		static void CreateInstance(Renderer* renderer)
-		{
-			if (mpInstance != nullptr)return;
-			mpInstance = renderer;
-		}
-		static Renderer* GetInstancePtr()
-		{
-			return mpInstance;
-		}
+		// Owned via unique_ptr by whoever creates a backend (see Game::Client::Application) and
+		// deleted through this base pointer - needs to be virtual for that to run the concrete
+		// backend's destructor instead of just Renderer's.
+		virtual ~Renderer() = default;
+
 		virtual bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height) = 0;
 
 		virtual void SetViewPort() = 0;
@@ -49,31 +42,29 @@ namespace DUPLEX_NS_GRAPHICS
 
 		virtual void EndScene() = 0;
 
-		virtual void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) = 0;
+		virtual void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount) = 0;
 
 		virtual void Shutdown() = 0;
 
-		virtual IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) = 0;
+		virtual TextureHandle CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) = 0;
 
-		virtual IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format) = 0;
+		virtual ShaderResourceViewHandle CreateTextureSRV(TextureHandle texture, TextureFormat format) = 0;
 
-		virtual void UseTexture(ui32 slot, GraphicsBufferPtr view) = 0;
+		virtual void UseTexture(ui32 slot, ShaderResourceViewHandle view) = 0;
 
-		virtual IntPtr CreateCubemapSRV(IntPtr cubemap, TextureFormat format) = 0;
+		virtual ShaderResourceViewHandle CreateCubemapSRV(TextureHandle cubemap, TextureFormat format) = 0;
 
-		virtual GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) = 0;
+		virtual BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) = 0;
 
 		virtual bool Resize(ui32 width, ui32 height) = 0;
 
 		virtual bool CheckForFullscreen() = 0;
 
-		virtual void ReleaseTexture(IntPtr& texture) = 0;
-		virtual void ReleaseTextureSRV(IntPtr& srv) = 0;
-		virtual void ReleaseBuffer(IntPtr& buffer) = 0;
+		virtual void ReleaseTexture(TextureHandle& texture) = 0;
+		virtual void ReleaseTextureSRV(ShaderResourceViewHandle& srv) = 0;
+		virtual void ReleaseBuffer(BufferHandle& buffer) = 0;
 
 	protected:
 		ui32 PixelSizeFromTextureFormat(TextureFormat format);
-
-
 	};
 }

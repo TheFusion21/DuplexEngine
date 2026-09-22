@@ -13,42 +13,34 @@ namespace Engine::ECS
 	class MeshRenderer
 	{
 	public:
-		~MeshRenderer()
-		{
-			//for (GraphicsBufferPtr& vb : vertexBuffers)
-			//{
-			//	DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
-			//}
-			//vertexBuffers.clear();
-			//for (GraphicsBufferPtr& ib : indexBuffers)
-			//{
-			//	DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
-			//}
-			//indexBuffers.clear();
-			//indexCounts.clear();
-		}
+		// Buffers are intentionally not released here: a destructor can't take the Renderer&
+		// it would need, and there's currently no "entity destroyed" system pass that could
+		// call SetMesh's release path with one. Same leak-on-destroy the previous (dead, this
+		// was always commented out) body would have had either way - not something this pass
+		// changes, just now stated instead of left in a stale comment.
+		~MeshRenderer() = default;
 		MeshRenderer(){}
 		MeshRenderer(const MeshRenderer& copy) = default;
 		MeshRenderer& operator=(const MeshRenderer& copy) = default;
-		void SetMesh(Engine::Resources::Mesh mesh)
+		void SetMesh(DUPLEX_NS_GRAPHICS::Renderer& renderer, Engine::Resources::Mesh mesh)
 		{
 			this->mesh = mesh;
-			for (GraphicsBufferPtr& vb : vertexBuffers)
+			for (DUPLEX_NS_GRAPHICS::BufferHandle& vb : vertexBuffers)
 			{
-				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(vb);
+				renderer.ReleaseBuffer(vb);
 			}
 			vertexBuffers.clear();
-			for (GraphicsBufferPtr& ib : indexBuffers)
+			for (DUPLEX_NS_GRAPHICS::BufferHandle& ib : indexBuffers)
 			{
-				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ReleaseBuffer(ib);
+				renderer.ReleaseBuffer(ib);
 			}
 			indexBuffers.clear();
 			indexCounts.clear();
 			for (Engine::Resources::Mesh::SubMesh sm : this->mesh.subMeshes)
 			{
-				GraphicsBufferPtr vb = DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Vertex, sm.vertices.data(), static_cast<ui32>(sm.vertices.size()) * sizeof(Vertex));
+				DUPLEX_NS_GRAPHICS::BufferHandle vb = renderer.CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Vertex, sm.vertices.data(), static_cast<ui32>(sm.vertices.size()) * sizeof(Vertex));
 				vertexBuffers.push_back(vb);
-				GraphicsBufferPtr ib = DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Index, sm.indices.data(), static_cast<ui32>(sm.indices.size()) * sizeof(ui32));
+				DUPLEX_NS_GRAPHICS::BufferHandle ib = renderer.CreateBuffer(DUPLEX_NS_GRAPHICS::BufferType::Index, sm.indices.data(), static_cast<ui32>(sm.indices.size()) * sizeof(ui32));
 				indexBuffers.push_back(ib);
 				indexCounts.push_back(static_cast<ui32>(sm.indices.size()));
 			}
@@ -60,10 +52,9 @@ namespace Engine::ECS
 		std::vector< DUPLEX_NS_GRAPHICS::BsdfMaterial> materials;
 		Engine::Resources::Mesh mesh;
 	private:
-		std::vector<GraphicsBufferPtr> vertexBuffers;
-		std::vector<GraphicsBufferPtr> indexBuffers;
+		std::vector<DUPLEX_NS_GRAPHICS::BufferHandle> vertexBuffers;
+		std::vector<DUPLEX_NS_GRAPHICS::BufferHandle> indexBuffers;
 		std::vector<ui32> indexCounts;
-		//friend class DUPLEX_NS_GRAPHICS::D3D11Renderer;
 	protected:
 		friend class MeshSystem;
 	};

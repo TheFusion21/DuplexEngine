@@ -8,7 +8,7 @@
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_UTIL;
 
-Cubemap Cubemap::LoadFromFile(const char* filename, bool enableReadWrite)
+Cubemap Cubemap::LoadFromFile(Renderer& renderer, const char* filename, bool enableReadWrite)
 {
 	FILE* f = stbi__fopen(filename, "rb");
 	if (!f)
@@ -114,8 +114,9 @@ Cubemap Cubemap::LoadFromFile(const char* filename, bool enableReadWrite)
 
 	Cubemap cube(size, layout, enableReadWrite, format);
 	cube.data = data;
-	cube._texResource = Renderer::GetInstancePtr()->CreateTexture(cube._width, cube._height, 1, cube._format, cube.data);
-	cube._texResourceView = Renderer::GetInstancePtr()->CreateCubemapSRV(cube._texResource, cube._format);
+	cube._texResource = renderer.CreateTexture(cube._width, cube._height, 1, cube._format, cube.data);
+	cube._texResourceView = renderer.CreateCubemapSRV(cube._texResource, cube._format);
+	renderer.ReleaseTexture(cube._texResource);
 	if (!cube.enableReadWrite)
 	{
 		stbi_image_free(cube.data);

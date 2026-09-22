@@ -18,7 +18,7 @@ using namespace DUPLEX_NS_MATH;
 //Texture2D Texture2D::grayTexture = Texture2D::FromValue(1, 1, false, 0.5f);
 //Texture2D Texture2D::normalTexture = Texture2D::FromColor(1, 1, false, FloatColor{ 0.5f, 0.5f, 1.0f, 1.0f });
 
-Texture2D Texture2D::FromColor(ui32 width, ui32 height, bool enableReadWrite, FloatColor color)
+Texture2D Texture2D::FromColor(Renderer& renderer, ui32 width, ui32 height, bool enableReadWrite, FloatColor color)
 {
 	Texture2D tex(width, height, enableReadWrite, TextureFormat::RGBAFLOAT);
 
@@ -30,13 +30,13 @@ Texture2D Texture2D::FromColor(ui32 width, ui32 height, bool enableReadWrite, Fl
 		data[i+2] = color.b;
 		data[i+3] = color.a;
 	}
-	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
-	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
-	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
+	tex._texResource = renderer.CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
+	tex._texResourceView = renderer.CreateTextureSRV(tex._texResource, tex._format);
+	renderer.ReleaseTexture(tex._texResource);
 	return tex;
 }
 
-Texture2D Texture2D::FromValue(ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode)
+Texture2D Texture2D::FromValue(Renderer& renderer, ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode)
 {
 	value = Clamp(value, 0.0f, 1.0f);
 	TextureFormat format;
@@ -57,13 +57,13 @@ Texture2D Texture2D::FromValue(ui32 width, ui32 height, bool enableReadWrite, fl
 	{
 		data[i + 0] = static_cast<byte>(value * 255);
 	}
-	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
-	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
-	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
+	tex._texResource = renderer.CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
+	tex._texResourceView = renderer.CreateTextureSRV(tex._texResource, tex._format);
+	renderer.ReleaseTexture(tex._texResource);
 	return tex;
 }
 
-Texture2D Texture2D::LoadFromFile(const char* filename, bool enableReadWrite)
+Texture2D Texture2D::LoadFromFile(Renderer& renderer, const char* filename, bool enableReadWrite)
 {
 	FILE* f = stbi__fopen(filename, "rb");
 	if (!f)
@@ -135,9 +135,9 @@ Texture2D Texture2D::LoadFromFile(const char* filename, bool enableReadWrite)
 	fclose(f);
 	Texture2D tex(width, height, enableReadWrite, format);
 	tex.data = data;
-	tex._texResource = Renderer::GetInstancePtr()->CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
-	tex._texResourceView = Renderer::GetInstancePtr()->CreateTextureSRV(tex._texResource, tex._format);
-	Renderer::GetInstancePtr()->ReleaseTexture(tex._texResource);
+	tex._texResource = renderer.CreateTexture(tex._width, tex._height, 1, tex._format, tex.data);
+	tex._texResourceView = renderer.CreateTextureSRV(tex._texResource, tex._format);
+	renderer.ReleaseTexture(tex._texResource);
 	if (!tex.enableReadWrite)
 	{
 		stbi_image_free(tex.data);

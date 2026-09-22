@@ -46,26 +46,26 @@ namespace DUPLEX_NS_GRAPHICS
 
 		void EndScene() override;
 
-		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount) override;
+		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount) override;
 
 		void Shutdown() override;
 
-		IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) override;
+		TextureHandle CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr) override;
 
-		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format) override;
+		ShaderResourceViewHandle CreateTextureSRV(TextureHandle texture, TextureFormat format) override;
 
-		void UseTexture(ui32 slot, GraphicsBufferPtr view) override;
+		void UseTexture(ui32 slot, ShaderResourceViewHandle view) override;
 
-		IntPtr CreateCubemapSRV(IntPtr cubemap, TextureFormat format) override;
+		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle cubemap, TextureFormat format) override;
 
-		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) override;
+		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) override;
 
 		bool Resize(ui32 width, ui32 height) override;
 
 		bool CheckForFullscreen() override;
 
-		void ReleaseTexture(IntPtr& texture) override;
-		void ReleaseTextureSRV(IntPtr& srv) override;
-		void ReleaseBuffer(IntPtr& buffer) override;
+		void ReleaseTexture(TextureHandle& texture) override;
+		void ReleaseTextureSRV(ShaderResourceViewHandle& srv) override;
+		void ReleaseBuffer(BufferHandle& buffer) override;
 	};
 }

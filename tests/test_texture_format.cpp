@@ -23,18 +23,18 @@ namespace
 		void SetLight(DUPLEX_NS_UTIL::GpuLight) override {}
 		void BeginScene() override {}
 		void EndScene() override {}
-		void Render(DUPLEX_NS_MATH::Mat4x4, GraphicsBufferPtr, GraphicsBufferPtr, ui32) override {}
+		void Render(DUPLEX_NS_MATH::Mat4x4, BufferHandle, BufferHandle, ui32) override {}
 		void Shutdown() override {}
-		IntPtr CreateTexture(ui32, ui32, ui32, TextureFormat, void* = nullptr) override { return nullptr; }
-		IntPtr CreateTextureSRV(IntPtr, TextureFormat) override { return nullptr; }
-		void UseTexture(ui32, GraphicsBufferPtr) override {}
-		IntPtr CreateCubemapSRV(IntPtr, TextureFormat) override { return nullptr; }
-		GraphicsBufferPtr CreateBuffer(BufferType, const void*, int, UsageType = UsageType::Default) override { return nullptr; }
+		TextureHandle CreateTexture(ui32, ui32, ui32, TextureFormat, void* = nullptr) override { return TextureHandle{}; }
+		ShaderResourceViewHandle CreateTextureSRV(TextureHandle, TextureFormat) override { return ShaderResourceViewHandle{}; }
+		void UseTexture(ui32, ShaderResourceViewHandle) override {}
+		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle, TextureFormat) override { return ShaderResourceViewHandle{}; }
+		BufferHandle CreateBuffer(BufferType, const void*, int, UsageType = UsageType::Default) override { return BufferHandle{}; }
 		bool Resize(ui32, ui32) override { return true; }
 		bool CheckForFullscreen() override { return false; }
-		void ReleaseTexture(IntPtr&) override {}
-		void ReleaseTextureSRV(IntPtr&) override {}
-		void ReleaseBuffer(IntPtr&) override {}
+		void ReleaseTexture(TextureHandle&) override {}
+		void ReleaseTextureSRV(ShaderResourceViewHandle&) override {}
+		void ReleaseBuffer(BufferHandle&) override {}
 
 		ui32 PublicPixelSize(TextureFormat format) { return PixelSizeFromTextureFormat(format); }
 	};

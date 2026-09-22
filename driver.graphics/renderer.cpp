@@ -2,8 +2,6 @@
 
 using namespace DUPLEX_NS_GRAPHICS;
 
-Renderer* Renderer::mpInstance = nullptr;
-
 ui32 Renderer::PixelSizeFromTextureFormat(TextureFormat format)
 {
 	switch (format)

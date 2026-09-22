@@ -4,6 +4,8 @@
 
 namespace DUPLEX_NS_GRAPHICS
 {
+	class Renderer;
+
 	class Texture2D : public Texture
 	{
 	public:
@@ -13,10 +15,10 @@ namespace DUPLEX_NS_GRAPHICS
 			ALPHA
 		};
 		/// Create a uniform Texture2D with specific width and height preferably power of 2
-		static Texture2D FromColor(ui32 width, ui32 height, bool enableReadWrite, DUPLEX_NS_UTIL::FloatColor color);
-		static Texture2D FromValue(ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode = SingleChannelMode::RED);
-		
-		static Texture2D LoadFromFile(const char* filename, bool enableReadWrite);
+		static Texture2D FromColor(Renderer& renderer, ui32 width, ui32 height, bool enableReadWrite, DUPLEX_NS_UTIL::FloatColor color);
+		static Texture2D FromValue(Renderer& renderer, ui32 width, ui32 height, bool enableReadWrite, float value, SingleChannelMode mode = SingleChannelMode::RED);
+
+		static Texture2D LoadFromFile(Renderer& renderer, const char* filename, bool enableReadWrite);
 
 		~Texture2D();
 		/// Create a Texture2D with specific width and height preferably power of 2
@@ -25,7 +27,7 @@ namespace DUPLEX_NS_GRAPHICS
 		/// Create a Texture2D with specific width and height preferably power of 2 and format the data is stored in
 		Texture2D(ui32 width, ui32 height, bool enableReadWrite, TextureFormat format);
 
-		
+
 		/// resizes a Texture2D to new dimensions
 		void Resize(ui32 width, ui32 height);
 	};

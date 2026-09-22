@@ -26,7 +26,7 @@ namespace DUPLEX_NS_GRAPHICS
 
 		FLOAT clearColor[4] = { 0.529411f, 0.807843f, 0.921686f, 1.0f };
 		//Mesh Buffers
-		GraphicsBufferPtr modelBuffer = nullptr;
+		BufferHandle modelBuffer;
 		//Shaders
 		ID3D11VertexShader* vertexShader = nullptr;
 		ID3D11InputLayout* vertexLayout = nullptr;
@@ -40,9 +40,14 @@ namespace DUPLEX_NS_GRAPHICS
 		ID3D11BlendState* blendState = nullptr;
 		//Camera
 		DUPLEX_NS_UTIL::worldConstant worldLocalBuffer;
-		GraphicsBufferPtr worldBuffer = nullptr;
+		BufferHandle worldBuffer;
 		std::vector<DUPLEX_NS_UTIL::GpuLight> lights;
-		
+
+		// Backs the generation-checked handles returned to callers; owns the actual COM
+		// resources so Get()/reinterpret_cast tricks on the handle bits itself aren't needed.
+		HandlePool<ID3D11Buffer*, BufferHandle> bufferPool;
+		HandlePool<ID3D11Texture2D*, TextureHandle> texturePool;
+		HandlePool<ID3D11ShaderResourceView*, ShaderResourceViewHandle> srvPool;
 
 		ID3D11Debug* debug = nullptr;
 		std::vector<ID3D11ShaderResourceView*> textureViews;
@@ -52,7 +57,7 @@ namespace DUPLEX_NS_GRAPHICS
 
 	public:
 		/// <summary>
-		/// 
+		///
 		/// </summary>
 		/// <returns>init was successful</returns>
 		bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height);
@@ -80,8 +85,7 @@ namespace DUPLEX_NS_GRAPHICS
 		/// Release and clear/delete previously created pointers and exit fullscreen if required
 		/// </summary>
 		void Shutdown();
-		//void RenderObject(DUPLEX_NS_MATH::Transform transform, int indexCount, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer);
-		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount);
+		void Render(DUPLEX_NS_MATH::Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount);
 		/// <summary>
 		/// Assign a camera to be used for rendering
 		/// </summary>
@@ -94,13 +98,13 @@ namespace DUPLEX_NS_GRAPHICS
 
 		bool CheckForFullscreen();
 
-		IntPtr CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
-		void ReleaseTexture(IntPtr& texture);
-		void UseTexture(ui32 slot, GraphicsBufferPtr view);
-		IntPtr CreateTextureSRV(IntPtr texture, TextureFormat format);
-		void ReleaseTextureSRV(IntPtr& srv);
+		TextureHandle CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
+		void ReleaseTexture(TextureHandle& texture);
+		void UseTexture(ui32 slot, ShaderResourceViewHandle view);
+		ShaderResourceViewHandle CreateTextureSRV(TextureHandle texture, TextureFormat format);
+		void ReleaseTextureSRV(ShaderResourceViewHandle& srv);
 
-		IntPtr CreateCubemapSRV(IntPtr cubemap, TextureFormat format);
+		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle cubemap, TextureFormat format);
 		/// <summary>
 		/// Create a Buffer in a specific type with data and the defined usage
 		/// </summary>
@@ -108,9 +112,9 @@ namespace DUPLEX_NS_GRAPHICS
 		/// <param name="data"></param>
 		/// <param name="dataSize"></param>
 		/// <param name="usage"></param>
-		/// <returns>A generic pointer to be used for rendering or updating the buffer</returns>
-		GraphicsBufferPtr CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
-		void ReleaseBuffer(IntPtr& buffer);
+		/// <returns>A handle to be used for rendering or updating the buffer</returns>
+		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
+		void ReleaseBuffer(BufferHandle& buffer);
 
 
 		//void AddDirectionalLight(Engine::Components::DirectionalLight& dirLight);

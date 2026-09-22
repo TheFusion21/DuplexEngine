@@ -143,17 +143,17 @@ void VulkanRenderer::SetLight(GpuLight lightDescriptor)
 {
 }
 
-IntPtr VulkanRenderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
+TextureHandle VulkanRenderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
 {
-	return nullptr;
+	return TextureHandle{};
 }
 
-IntPtr VulkanRenderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
+ShaderResourceViewHandle VulkanRenderer::CreateTextureSRV(TextureHandle texture, TextureFormat format)
 {
-	return nullptr;
+	return ShaderResourceViewHandle{};
 }
 
-void VulkanRenderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
+void VulkanRenderer::UseTexture(ui32 slot, ShaderResourceViewHandle view)
 {
 }
 
@@ -165,7 +165,7 @@ void VulkanRenderer::EndScene()
 {
 }
 
-void VulkanRenderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
+void VulkanRenderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount)
 {
 }
 
@@ -173,9 +173,9 @@ void VulkanRenderer::Shutdown()
 {
 }
 
-GraphicsBufferPtr VulkanRenderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
+BufferHandle VulkanRenderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
 {
-	return nullptr;
+	return BufferHandle{};
 }
 
 
@@ -189,16 +189,21 @@ bool VulkanRenderer::CheckForFullscreen()
 	return false;
 }
 
-void VulkanRenderer::ReleaseTexture(IntPtr& texture)
+ShaderResourceViewHandle VulkanRenderer::CreateCubemapSRV(TextureHandle cubemap, TextureFormat format)
+{
+	return ShaderResourceViewHandle{};
+}
+
+void VulkanRenderer::ReleaseTexture(TextureHandle& texture)
 {
 }
 
-void VulkanRenderer::ReleaseTextureSRV(IntPtr& srv)
+void VulkanRenderer::ReleaseTextureSRV(ShaderResourceViewHandle& srv)
 {
 
 }
 
-void VulkanRenderer::ReleaseBuffer(IntPtr& buffer)
+void VulkanRenderer::ReleaseBuffer(BufferHandle& buffer)
 {
 }
 

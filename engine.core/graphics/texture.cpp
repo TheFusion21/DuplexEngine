@@ -4,7 +4,7 @@ using namespace DUPLEX_NS_GRAPHICS;
 
 unsigned long Texture::currentTextureMemory = 0;
 
-IntPtr Texture::GetNativeTexturePtr()
+ShaderResourceViewHandle Texture::GetShaderResourceView()
 {
 	return _texResourceView;
 }

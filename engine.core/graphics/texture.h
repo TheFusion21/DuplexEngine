@@ -1,6 +1,7 @@
 #pragma once
 #include "math/types.h"
 #include "enums.h"
+#include "handles.h"
 #include "namespaces.h"
 namespace DUPLEX_NS_GRAPHICS
 {
@@ -47,7 +48,7 @@ namespace DUPLEX_NS_GRAPHICS
 		FilterMode filterMode = FilterMode::Bilinear;
 		TextureWrapMode wrapMode = TextureWrapMode::Clamp;
 
-		IntPtr GetNativeTexturePtr();
+		ShaderResourceViewHandle GetShaderResourceView();
 
 		const bool IsReadWriteEnable() const
 		{
@@ -63,8 +64,8 @@ namespace DUPLEX_NS_GRAPHICS
 		TextureDimension _dimension = TextureDimension::None;
 		TextureFormat _format = TextureFormat::RGBA32;
 
-		IntPtr _texResource = nullptr;
-		IntPtr _texResourceView = nullptr;
+		TextureHandle _texResource;
+		ShaderResourceViewHandle _texResourceView;
 
 		Texture(bool enableReadWrite);
 	};

@@ -3,7 +3,6 @@
 #include "client.h"
 #include "math/types.h"
 #include "d3d11renderer.h"
-#include "vulkanrenderer.h"
 #include "enginetime.h"
 #include "input/input.h"
 #include "graphics/light.h"
@@ -21,13 +20,14 @@ void Application::Init()
 	window.Init(name, 1280, 720);
 	window.Show();
 	window.SetTitle("THIS IS A Engine");
-	Renderer::CreateInstance(new D3D11Renderer());
+	renderer = std::make_unique<D3D11Renderer>();
 	ui32 width, height;
 	window.GetClientSize(width, height);
-	if (!Renderer::GetInstancePtr()->Init(window.GetInstance(), window.GetHandle(), width, height))
+	if (!renderer->Init(window.GetInstance(), window.GetHandle(), width, height))
 	{
 		return;
 	}
+	window.SetRenderer(renderer.get());
 	coordinator.Init();
 	Input::Init();
 
@@ -69,22 +69,22 @@ void Application::Init()
 	cubeTransform.scale = Vec3::UnitScale * static_cast<real>(2.0);
 	coordinator.AddComponent(cube, cubeTransform);
 	coordinator.AddComponent(cube, MeshRenderer());
-	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
-	BsdfMaterial uv_1;
-	uv_1.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
-	uv_1.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
-	uv_1.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
-	uv_1.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
-	uv_1.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
-	uv_1.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
+	coordinator.GetComponent<MeshRenderer>(cube).SetMesh(*renderer, Mesh::LoadOBJ("./data/mdls/SK_Bio_Mutant.obj"));
+	BsdfMaterial uv_1(*renderer);
+	uv_1.albedo = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_a.png", false);
+	uv_1.metallic = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_m.png", false);
+	uv_1.roughness = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_rg.png", false);
+	uv_1.ambientOcclusion = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_AO.png", false);
+	uv_1.normal = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_n.png", false);
+	uv_1.emission = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Top_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_1);
-	BsdfMaterial uv_2;
-	uv_2.albedo = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
-	uv_2.metallic = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
-	uv_2.roughness = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
-	uv_2.ambientOcclusion = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
-	uv_2.normal = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
-	uv_2.emission = Texture2D::LoadFromFile("./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
+	BsdfMaterial uv_2(*renderer);
+	uv_2.albedo = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_a.png", false);
+	uv_2.metallic = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_m.png", false);
+	uv_2.roughness = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_rg.png", false);
+	uv_2.ambientOcclusion = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_AO.png", false);
+	uv_2.normal = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_n.png", false);
+	uv_2.emission = Texture2D::LoadFromFile(*renderer, "./data/mdls/Skin_1/T_Biomech_Mutant_Skin_1_Bottom_emissive.png", false);
 	coordinator.GetComponent<MeshRenderer>(cube).materials.push_back(uv_2);
 
 	dirLight = coordinator.CreateEntity();
@@ -99,15 +99,12 @@ void Application::Run()
 {
 	while(this->appState == AppState::Running)
 	{
+		camSystem->Update(coordinator, *renderer);
+		lightSystem->Update(coordinator, *renderer);
 
-		//Renderer::GetInstancePtr()->SetActiveCamera(gameObjects[0]->transform->position, gameObjects[0]->GetComponent<Camera>()->GetViewProjMatrix());
-		//RENDER
-		camSystem->Update(coordinator);
-		lightSystem->Update(coordinator);
-
-		Renderer::GetInstancePtr()->BeginScene();
-		meshSystem->Update(coordinator);
-		Renderer::GetInstancePtr()->EndScene();
+		renderer->BeginScene();
+		meshSystem->Update(coordinator, *renderer);
+		renderer->EndScene();
 		if (!window.MessagePump())
 		{
 			this->appState = AppState::Stopped;
@@ -115,7 +112,7 @@ void Application::Run()
 		Transform& t = coordinator.GetComponent<Transform>(dirLight);
 		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
-		
+
 		Transform& t2 = coordinator.GetComponent<Transform>(cube);
 		t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
 		Time::Update();
@@ -124,5 +121,5 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-	Renderer::GetInstancePtr()->Shutdown();
+	renderer->Shutdown();
 }

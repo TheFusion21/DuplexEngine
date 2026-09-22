@@ -10,10 +10,12 @@ namespace DUPLEX_NS_GRAPHICS
 		Column,
 		Row
 	};
+	class Renderer;
+
 	class Cubemap : public Texture
 	{
 	public:
-		static Cubemap LoadFromFile(const char* filename, bool enableReadWrite);
+		static Cubemap LoadFromFile(Renderer& renderer, const char* filename, bool enableReadWrite);
 
 		~Cubemap();
 

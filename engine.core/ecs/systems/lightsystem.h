@@ -8,9 +8,9 @@ namespace Engine::ECS
 	class LightSystem : public System
 	{
 	public:
-		void Update(Coordinator& coord)
+		void Update(Coordinator& coord, DUPLEX_NS_GRAPHICS::Renderer& renderer)
 		{
-			DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->ClearLights();
+			renderer.ClearLights();
 			for (auto const& entity : entities)
 			{
 				auto& transform = coord.GetComponent<Transform>(entity);
@@ -31,7 +31,7 @@ namespace Engine::ECS
 				else
 					gpuLight.transform = DUPLEX_NS_MATH::Mat4x4::FromTranslation(transform.position) * DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation);
 				gpuLight.position = transform.position;
-				DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->SetLight(gpuLight);
+				renderer.SetLight(gpuLight);
 			}
 		}
 		static ui32 GetTypeID()

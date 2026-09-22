@@ -2,7 +2,7 @@
 // INTERNAL INCLUDES
 #include "appwindow.h"
 #include "appinfo.h"
-#include "d3d11renderer.h"
+#include "renderer.h"
 
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace Engine::Core;
@@ -120,14 +120,16 @@ void AppWindow::Minimize()
 
 bool AppWindow::Resize()
 {
+	if (!renderer)
+		return false;
 	ui32 width, height;
 	GetClientSize(width, height);
-	return Renderer::GetInstancePtr()->Resize(width, height);
+	return renderer->Resize(width, height);
 }
 
 void Engine::Core::AppWindow::ResizeOnFullscreenToggle()
 {
-	if (Renderer::GetInstancePtr()->CheckForFullscreen())
+	if (renderer && renderer->CheckForFullscreen())
 	{
 		Resize();
 	}
@@ -177,6 +179,11 @@ ui64 Engine::Core::AppWindow::GetHandle()
 ui64 Engine::Core::AppWindow::GetInstance()
 {
 	return reinterpret_cast<ui64>(instance);
+}
+
+void Engine::Core::AppWindow::SetRenderer(Renderer* renderer)
+{
+	this->renderer = renderer;
 }
 
 void Engine::Core::AppWindow::SetTitle(const char* title)

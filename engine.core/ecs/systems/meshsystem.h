@@ -8,7 +8,7 @@ namespace Engine::ECS
 	class MeshSystem : public System
 	{
 	public:
-		void Update(Coordinator& coord)
+		void Update(Coordinator& coord, DUPLEX_NS_GRAPHICS::Renderer& renderer)
 		{
 			for (auto const& entity : entities)
 			{
@@ -19,14 +19,14 @@ namespace Engine::ECS
 				{
 					if (mesh.materials.size() > i)
 					{
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(0, mesh.materials[i].albedo.GetNativeTexturePtr());
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].metallic.GetNativeTexturePtr());
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(1, mesh.materials[i].ambientOcclusion.GetNativeTexturePtr());
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(3, mesh.materials[i].roughness.GetNativeTexturePtr());
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(4, mesh.materials[i].normal.GetNativeTexturePtr());
-						DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->UseTexture(5, mesh.materials[i].emission.GetNativeTexturePtr());
+						renderer.UseTexture(0, mesh.materials[i].albedo.GetShaderResourceView());
+						renderer.UseTexture(1, mesh.materials[i].metallic.GetShaderResourceView());
+						renderer.UseTexture(1, mesh.materials[i].ambientOcclusion.GetShaderResourceView());
+						renderer.UseTexture(3, mesh.materials[i].roughness.GetShaderResourceView());
+						renderer.UseTexture(4, mesh.materials[i].normal.GetShaderResourceView());
+						renderer.UseTexture(5, mesh.materials[i].emission.GetShaderResourceView());
 					}
-					DUPLEX_NS_GRAPHICS::Renderer::GetInstancePtr()->Render(mat, mesh.vertexBuffers[i], mesh.indexBuffers[i], mesh.indexCounts[i]);
+					renderer.Render(mat, mesh.vertexBuffers[i], mesh.indexBuffers[i], mesh.indexCounts[i]);
 				}
 			}
 		}

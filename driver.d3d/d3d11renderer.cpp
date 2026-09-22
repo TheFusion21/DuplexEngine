@@ -181,7 +181,7 @@ bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
 	modelConstant modelCB;
 
 	modelBuffer = CreateBuffer(BufferType::Constant, &modelCB, sizeof(modelConstant), UsageType::Dynamic);
-	if (!modelBuffer)
+	if (!modelBuffer.IsValid())
 	{
 		MessageBoxA(NULL, "Could not create transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
@@ -284,12 +284,13 @@ bool D3D11Renderer::CreateDepthStencil()
 {
 	SAFERELEASE(depthView);
 	//Create a Texture2D with 1 channel that the depth stencil buffer can write to
-	ID3D11Texture2D* depthSurface = reinterpret_cast<ID3D11Texture2D*>(CreateTexture(width, height, 1, TextureFormat::D32));
-	if (depthSurface == nullptr)
+	TextureHandle depthTextureHandle = CreateTexture(width, height, 1, TextureFormat::D32);
+	if (!depthTextureHandle.IsValid())
 	{
 		MessageBoxA(NULL, "Could not create depth buffer texture", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
+	ID3D11Texture2D* depthSurface = texturePool.Get(depthTextureHandle);
 	//Create the depth stencil state that will descripe how depth is calculate if enabled
 	D3D11_DEPTH_STENCIL_DESC stencilDesc = {};
 	stencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
@@ -314,7 +315,10 @@ bool D3D11Renderer::CreateDepthStencil()
 		MessageBoxA(NULL, "Could not create depth view", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return false;
 	}
-	SAFERELEASE(depthSurface);
+	// Goes through ReleaseTexture (not a raw SAFERELEASE) so the texturePool slot is freed
+	// too - previously this released the COM object directly, leaving a stale "alive" entry
+	// in the pool with a dangling pointer.
+	ReleaseTexture(depthTextureHandle);
 	return true;
 }
 
@@ -554,10 +558,11 @@ void D3D11Renderer::BeginScene()
 		worldLocalBuffer.lights[i] = l;
 		i++;
 	}
-	if (worldBuffer != nullptr)
+	if (worldBuffer.IsValid())
 	{
+		ID3D11Buffer* worldBufferPtr = bufferPool.Get(worldBuffer);
 		D3D11_MAPPED_SUBRESOURCE camResource = {};
-		if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &camResource)))
+		if (FAILED(context->Map(worldBufferPtr, 0, D3D11_MAP_WRITE_DISCARD, 0, &camResource)))
 		{
 			MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 			return;
@@ -571,12 +576,12 @@ void D3D11Renderer::BeginScene()
 			(*dataMat) = worldLocalBuffer;
 		}
 		//Unmap to confirm upload and discard old data
-		context->Unmap(reinterpret_cast<ID3D11Resource*>(worldBuffer), 0);
+		context->Unmap(worldBufferPtr, 0);
 	}
 	else
 	{
 		worldBuffer = CreateBuffer(BufferType::Constant, &worldLocalBuffer, sizeof(worldConstant), UsageType::Dynamic);
-		if (!worldBuffer)
+		if (!worldBuffer.IsValid())
 		{
 			MessageBoxA(NULL, "Could not set camera", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		}
@@ -643,17 +648,22 @@ void D3D11Renderer::Shutdown()
 	SAFERELEASE(computeSampler);
 }
 
-void D3D11Renderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, GraphicsBufferPtr indexBuffer, ui32 indexCount)
+void D3D11Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, BufferHandle indexBuffer, ui32 indexCount)
 {
 	//INPUT ASSEMBLER STAGE
 
 	ui32 stride = sizeof(Vertex);
 	ui32 offset = 0;
 	//Generate model Matrix from Position/Translation Rotation Scale -> TRS
-	
+
+	ID3D11Buffer* modelBufferPtr = bufferPool.Get(modelBuffer);
+	ID3D11Buffer* worldBufferPtr = bufferPool.Get(worldBuffer);
+	ID3D11Buffer* vertexBufferPtr = bufferPool.Get(vertexBuffer);
+	ID3D11Buffer* indexBufferPtr = bufferPool.Get(indexBuffer);
+
 	//Map the contents of the transformBuffer in CPU memory to be accessed by CPU
 	D3D11_MAPPED_SUBRESOURCE modelResource = {};
-	if (FAILED(context->Map(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0, D3D11_MAP_WRITE_DISCARD, 0, &modelResource)))
+	if (FAILED(context->Map(modelBufferPtr, 0, D3D11_MAP_WRITE_DISCARD, 0, &modelResource)))
 	{
 		MessageBoxA(NULL, "could not map transform buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -665,32 +675,32 @@ void D3D11Renderer::Render(Mat4x4 transformMat, GraphicsBufferPtr vertexBuffer, 
 	{
 		dataMat->world = transformMat;
 	}
-	
+
 	//Unmap to confirm upload and discard old data
-	context->Unmap(reinterpret_cast<ID3D11Resource*>(modelBuffer), 0);
-	
-	
+	context->Unmap(modelBufferPtr, 0);
+
+
 	//Bind the vertex data that describes the object we want to render
-	context->IASetVertexBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&vertexBuffer), &stride, &offset);
+	context->IASetVertexBuffers(0, 1, &vertexBufferPtr, &stride, &offset);
 	//Bind the index data that describes the faces of the object we want to render
-	context->IASetIndexBuffer(reinterpret_cast<ID3D11Buffer*>(indexBuffer), DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
+	context->IASetIndexBuffer(indexBufferPtr, DXGI_FORMAT::DXGI_FORMAT_R32_UINT, 0);
 	//The the assembler what type of data he will be working with
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	//Tell the assembler how the vertex shader inputs look like
 	context->IASetInputLayout(vertexLayout);
-	
+
 	//VERTEX SHADER STAGE
 	//Bind the transformation for rendering this object
-	context->VSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
+	context->VSSetConstantBuffers(0, 1, &modelBufferPtr);
 	//Bind the camera transformation for rendering this object
-	context->VSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
+	context->VSSetConstantBuffers(1, 1, &worldBufferPtr);
 	context->VSSetShader(vertexShader, nullptr, 0);
-	
+
 	//PIXEL SHADER STAGE
 	//Bind the transformation for rendering this object
-	context->PSSetConstantBuffers(0, 1, reinterpret_cast<ID3D11Buffer**>(&modelBuffer));
+	context->PSSetConstantBuffers(0, 1, &modelBufferPtr);
 	//Bind the camera transformation for rendering this object
-	context->PSSetConstantBuffers(1, 1, reinterpret_cast<ID3D11Buffer**>(&worldBuffer));
+	context->PSSetConstantBuffers(1, 1, &worldBufferPtr);
 	
 		//if (renderer->texture != nullptr)
 		//{
@@ -744,7 +754,7 @@ bool D3D11Renderer::CheckForFullscreen()
 	return false;
 }
 
-IntPtr D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
+TextureHandle D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)
 {
 	ui32 pitch = PixelSizeFromTextureFormat(format) * width;
 	D3D11_TEXTURE2D_DESC desc = {};
@@ -781,29 +791,30 @@ IntPtr D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, Textur
 	if (FAILED(device->CreateTexture2D(&desc, bufferSubResource, &tex2D)))
 	{
 		MessageBoxA(NULL, "Could not create texture2D", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return nullptr;
+		return TextureHandle{};
 	}
-	return reinterpret_cast<IntPtr>(tex2D);
+	return texturePool.Create(tex2D);
 }
 
-void D3D11Renderer::ReleaseTexture(IntPtr& texture)
+void D3D11Renderer::ReleaseTexture(TextureHandle& texture)
 {
-	ID3D11Texture2D* tex = reinterpret_cast<ID3D11Texture2D*>(texture);
+	if (!texture.IsValid())
+		return;
+	ID3D11Texture2D* tex = texturePool.Get(texture);
 	SAFERELEASE(tex);
-	texture = nullptr;
+	texturePool.Release(texture);
 }
 
-void D3D11Renderer::UseTexture(ui32 slot, GraphicsBufferPtr view)
+void D3D11Renderer::UseTexture(ui32 slot, ShaderResourceViewHandle view)
 {
 	while (slot >= textureViews.size())
 	{
 		textureViews.push_back(nullptr);
 	}
-	textureViews[slot] = reinterpret_cast<ID3D11ShaderResourceView*>(view);
-	
+	textureViews[slot] = view.IsValid() ? srvPool.Get(view) : nullptr;
 }
 
-IntPtr D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
+ShaderResourceViewHandle D3D11Renderer::CreateTextureSRV(TextureHandle texture, TextureFormat format)
 {
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = FromTextureFormat(format);
@@ -811,21 +822,23 @@ IntPtr D3D11Renderer::CreateTextureSRV(IntPtr texture, TextureFormat format)
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.MipLevels = -1;
 	ID3D11ShaderResourceView* srv = nullptr;
-	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Texture2D*>(texture), &srvDesc, &srv)))
+	if (FAILED(device->CreateShaderResourceView(texturePool.Get(texture), &srvDesc, &srv)))
 	{
-		return nullptr;
+		return ShaderResourceViewHandle{};
 	}
-	return reinterpret_cast<IntPtr>(srv);
+	return srvPool.Create(srv);
 }
 
-void D3D11Renderer::ReleaseTextureSRV(IntPtr& srv)
+void D3D11Renderer::ReleaseTextureSRV(ShaderResourceViewHandle& srv)
 {
-	ID3D11ShaderResourceView* tex = reinterpret_cast<ID3D11ShaderResourceView*>(srv);
-	SAFERELEASE(tex);
-	srv = nullptr;
+	if (!srv.IsValid())
+		return;
+	ID3D11ShaderResourceView* view = srvPool.Get(srv);
+	SAFERELEASE(view);
+	srvPool.Release(srv);
 }
 
-IntPtr D3D11Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
+ShaderResourceViewHandle D3D11Renderer::CreateCubemapSRV(TextureHandle cubemap, TextureFormat format)
 {
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = FromTextureFormat(format);
@@ -833,14 +846,14 @@ IntPtr D3D11Renderer::CreateCubemapSRV(IntPtr cubemap, TextureFormat format)
 	srvDesc.TextureCube.MostDetailedMip = 0;
 	srvDesc.TextureCube.MipLevels = -1;
 	ID3D11ShaderResourceView* srv = nullptr;
-	if (FAILED(device->CreateShaderResourceView(reinterpret_cast<ID3D11Texture2D*>(cubemap), &srvDesc, &srv)))
+	if (FAILED(device->CreateShaderResourceView(texturePool.Get(cubemap), &srvDesc, &srv)))
 	{
-		return nullptr;
+		return ShaderResourceViewHandle{};
 	}
-	return reinterpret_cast<IntPtr>(srv);
+	return srvPool.Create(srv);
 }
 
-GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
+BufferHandle D3D11Renderer::CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage)
 {
 	D3D11_BUFFER_DESC bufferDesc = {};
 	switch (usage)
@@ -867,7 +880,7 @@ GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data,
 		break;
 	default:
 		MessageBoxA(NULL, "invalid buffer type", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return nullptr;
+		return BufferHandle{};
 	}
 	if(type == BufferType::Constant)
 		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -889,16 +902,18 @@ GraphicsBufferPtr D3D11Renderer::CreateBuffer(BufferType type, const void* data,
 	if (FAILED(device->CreateBuffer(&bufferDesc, &bufferSubResource, &buffer)))
 	{
 		MessageBoxA(NULL, "Could not create vertex buffer", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return nullptr;
+		return BufferHandle{};
 	}
-	return reinterpret_cast<GraphicsBufferPtr>(buffer);
+	return bufferPool.Create(buffer);
 }
 
-void D3D11Renderer::ReleaseBuffer(IntPtr& buffer)
+void D3D11Renderer::ReleaseBuffer(BufferHandle& buffer)
 {
-	ID3D11Buffer* b = reinterpret_cast<ID3D11Buffer*>(buffer);
+	if (!buffer.IsValid())
+		return;
+	ID3D11Buffer* b = bufferPool.Get(buffer);
 	SAFERELEASE(b);
-	buffer = nullptr;
+	bufferPool.Release(buffer);
 }
 
 DXGI_FORMAT D3D11Renderer::FromTextureFormat(TextureFormat format)

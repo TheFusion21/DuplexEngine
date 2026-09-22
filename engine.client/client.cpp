@@ -85,7 +85,7 @@ void Application::Init()
 	// BoomBox.obj is modeled at real-world scale (~0.02m across, glTF's convention) - scaled
 	// up here rather than re-exporting the mesh, so it reads at roughly the same size the old
 	// SK_Bio_Mutant placeholder did at this camera distance.
-	propTransform.scale = Vec3::UnitScale * static_cast<real>(80.0);
+	propTransform.scale = Vec3UnitScale * static_cast<real>(80.0);
 	coordinator.AddComponent(prop, propTransform);
 	coordinator.AddComponent(prop, MeshRenderer());
 	coordinator.GetComponent<MeshRenderer>(prop).SetMesh(*renderer, Mesh::LoadOBJ("./data/mdls/BoomBox/BoomBox.obj"));
@@ -123,11 +123,11 @@ void Application::Run()
 		}
 		Input::Update();
 		Transform& t = coordinator.GetComponent<Transform>(dirLight);
-		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
+		t.rotation = QuaternionFromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
 
 		Transform& t2 = coordinator.GetComponent<Transform>(prop);
-		t2.rotation = Quaternion::FromAngleAxis(Time::time * static_cast<real>(-22.5), Vec3::UnitY);
+		t2.rotation = glm::angleAxis(glm::radians(Time::time * static_cast<real>(-22.5)), Vec3UnitY);
 		Time::Update();
 	}
 }

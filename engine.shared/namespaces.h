@@ -7,3 +7,4 @@
 #define DUPLEX_NS_UTIL Duplex::Utility
 #define DUPLEX_NS_GRAPHICS Duplex::Graphics
 #define DUPLEX_NS_RESOURCES Engine::Resources
+#define DUPLEX_NS_SIMD Duplex::Simd

@@ -9,7 +9,7 @@ using namespace DUPLEX_NS_MATH;
 Input::KeyState* Input::keyStates = nullptr;
 ui32 Input::keyStateCount = 0;
 
-Vec2 Input::_mousePosition = Vec2::Zero;
+Vec2 Input::_mousePosition = Vec2Zero;
 const Vec2& Input::mousePosition = Input::_mousePosition;
 
 void Input::Init()

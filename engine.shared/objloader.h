@@ -108,10 +108,10 @@ namespace objl
 		// A test to see if P1 is on the same side as P2 of a line segment ab
 		bool SameSide(DUPLEX_NS_MATH::Vec3 p1, DUPLEX_NS_MATH::Vec3 p2, DUPLEX_NS_MATH::Vec3 a, DUPLEX_NS_MATH::Vec3 b)
 		{
-			DUPLEX_NS_MATH::Vec3 cp1 = (b-a).Cross(p1 - a);
-			DUPLEX_NS_MATH::Vec3 cp2 = (b - a).Cross(p2 - a);
+			DUPLEX_NS_MATH::Vec3 cp1 = glm::cross(b - a, p1 - a);
+			DUPLEX_NS_MATH::Vec3 cp2 = glm::cross(b - a, p2 - a);
 
-			if (cp1.Dot(cp2) >= 0)
+			if (glm::dot(cp1, cp2) >= 0)
 				return true;
 			else
 				return false;
@@ -123,7 +123,7 @@ namespace objl
 			DUPLEX_NS_MATH::Vec3 u = t2 - t1;
 			DUPLEX_NS_MATH::Vec3 v = t3 - t1;
 
-			DUPLEX_NS_MATH::Vec3 normal = u.Cross(v);
+			DUPLEX_NS_MATH::Vec3 normal = glm::cross(u, v);
 
 			return normal;
 		}
@@ -143,11 +143,11 @@ namespace objl
 			DUPLEX_NS_MATH::Vec3 n = GenTriNormal(tri1, tri2, tri3);
 
 			// Project the point onto this normal
-			DUPLEX_NS_MATH::Vec3 proj = point.Project(n);
+			DUPLEX_NS_MATH::Vec3 proj = n * (glm::dot(point, n) / glm::dot(n, n));
 
 			// If the distance from the triangle to the point is 0
 			//	it lies on the triangle
-			if (proj.Magnitude() == 0)
+			if (glm::length(proj) == 0)
 				return true;
 			else
 				return false;
@@ -660,7 +660,7 @@ namespace objl
 				DUPLEX_NS_MATH::Vec3 A = oVerts[0].position - oVerts[1].position;
 				DUPLEX_NS_MATH::Vec3 B = oVerts[2].position - oVerts[1].position;
 
-				DUPLEX_NS_MATH::Vec3 normal = A.Cross(B);
+				DUPLEX_NS_MATH::Vec3 normal = glm::cross(A, B);
 
 				for (int i = 0; i < int(oVerts.size()); i++)
 				{
@@ -782,7 +782,9 @@ namespace objl
 					}
 
 					// If Vertex is not an interior vertex
-					float angle = (pPrev.position - pCur.position).AngleBetween(pNext.position - pCur.position) * DUPLEX_NS_MATH::AngleToDeg();
+					DUPLEX_NS_MATH::Vec3 edgeA = pPrev.position - pCur.position;
+					DUPLEX_NS_MATH::Vec3 edgeB = pNext.position - pCur.position;
+					float angle = glm::degrees(glm::acos(glm::dot(edgeA, edgeB) / (glm::length(edgeA) * glm::length(edgeB))));
 					if (angle <= 0 && angle >= 180)
 						continue;
 

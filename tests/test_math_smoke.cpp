@@ -1,7 +1,8 @@
-// Baseline regression tests for the hand-rolled math library (Vec3/Mat4x4/Quaternion).
-// This exists mainly as a safety net ahead of a planned migration to GLM: these are the
-// invariants a drop-in replacement needs to preserve (handedness, identity behavior,
-// rotation direction), captured now while the current implementation is the known-good one.
+// Baseline regression tests for the math library, now GLM-backed (see math/vec3.h,
+// math/mat4x4.h, math/quaternion.h). These check the same invariants the old hand-rolled
+// implementation was verified against before the GLM migration (handedness, identity
+// behavior, rotation direction) - GLM defaults to the same right-handed convention, but this
+// pins it down rather than assuming.
 
 #include "math/vec3.h"
 #include "math/mat4x4.h"
@@ -24,12 +25,12 @@ namespace
 		}
 	}
 
-	bool ApproxEqual(real a, real b, real epsilon = static_cast<real>(1e-4))
+	bool ApproxEqual(float a, float b, float epsilon = 1e-4f)
 	{
 		return std::fabs(a - b) <= epsilon;
 	}
 
-	bool ApproxEqual(const Vec3& a, const Vec3& b, real epsilon = static_cast<real>(1e-4))
+	bool ApproxEqual(const Vec3& a, const Vec3& b, float epsilon = 1e-4f)
 	{
 		return ApproxEqual(a.x, b.x, epsilon) && ApproxEqual(a.y, b.y, epsilon) && ApproxEqual(a.z, b.z, epsilon);
 	}
@@ -38,27 +39,34 @@ namespace
 int main()
 {
 	// Cross product handedness: X cross Y must be Z (right-handed).
-	CheckTrue(Vec3::UnitX.Cross(Vec3::UnitY) == Vec3::UnitZ, "UnitX x UnitY == UnitZ");
+	CheckTrue(glm::cross(Vec3UnitX, Vec3UnitY) == Vec3UnitZ, "UnitX x UnitY == UnitZ");
 
 	// Dot product basics.
-	CheckTrue(Vec3::UnitX.Dot(Vec3::UnitX) == static_cast<real>(1.0), "UnitX . UnitX == 1");
-	CheckTrue(Vec3::UnitX.Dot(Vec3::UnitY) == static_cast<real>(0.0), "UnitX . UnitY == 0");
+	CheckTrue(glm::dot(Vec3UnitX, Vec3UnitX) == 1.0f, "UnitX . UnitX == 1");
+	CheckTrue(glm::dot(Vec3UnitX, Vec3UnitY) == 0.0f, "UnitX . UnitY == 0");
 
 	// Componentwise addition.
 	CheckTrue(Vec3(1, 2, 3) + Vec3(4, 5, 6) == Vec3(5, 7, 9), "Vec3(1,2,3) + Vec3(4,5,6) == Vec3(5,7,9)");
 
 	// Identity matrix must be a no-op both as a matrix product and applied to a vector.
-	CheckTrue(Mat4x4::Identity * Mat4x4::Identity == Mat4x4::Identity, "Identity * Identity == Identity");
-	CheckTrue(Mat4x4::Identity * Vec3::UnitX == Vec3::UnitX, "Identity * UnitX == UnitX");
+	CheckTrue(Mat4x4Identity * Mat4x4Identity == Mat4x4Identity, "Identity * Identity == Identity");
+	CheckTrue(Vec3(Mat4x4Identity * glm::vec4(Vec3UnitX, 1.0f)) == Vec3UnitX, "Identity * UnitX == UnitX");
 
 	// A zero-angle rotation must be the identity quaternion.
-	Quaternion noRotation = Quaternion::FromAngleAxis(static_cast<real>(0.0), Vec3::UnitY);
-	CheckTrue(noRotation == Quaternion(0, 0, 0, 1), "FromAngleAxis(0, axis) == identity quaternion");
+	Quaternion noRotation = glm::angleAxis(0.0f, Vec3UnitY);
+	CheckTrue(noRotation == QuatIdentity, "angleAxis(0, axis) == identity quaternion");
 
 	// A +90 degree rotation about Z must take +X to +Y (right-hand rule).
-	Quaternion rot90Z = Quaternion::FromAngleAxis(static_cast<real>(90.0), Vec3::UnitZ);
-	Vec3 rotated = rot90Z * Vec3::UnitX;
-	CheckTrue(ApproxEqual(rotated, Vec3::UnitY), "90 degree rotation about Z takes UnitX to UnitY");
+	Quaternion rot90Z = glm::angleAxis(glm::radians(90.0f), Vec3UnitZ);
+	Vec3 rotated = rot90Z * Vec3UnitX;
+	CheckTrue(ApproxEqual(rotated, Vec3UnitY), "90 degree rotation about Z takes UnitX to UnitY");
+
+	// QuaternionFromEuler (Z, then Y, then X, degrees) - the one thing GLM doesn't provide
+	// directly and this migration added a small helper for. A pure +90 yaw (Y) should behave
+	// the same as glm::angleAxis(90deg, UnitY) alone.
+	Quaternion yaw90 = QuaternionFromEuler(Vec3(0.0f, 90.0f, 0.0f));
+	Quaternion yaw90Direct = glm::angleAxis(glm::radians(90.0f), Vec3UnitY);
+	CheckTrue(ApproxEqual(yaw90 * Vec3UnitX, yaw90Direct * Vec3UnitX), "QuaternionFromEuler(0,90,0) matches angleAxis(90deg, UnitY)");
 
 	if (failures == 0)
 	{

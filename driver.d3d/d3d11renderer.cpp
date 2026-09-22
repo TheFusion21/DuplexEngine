@@ -685,7 +685,7 @@ void D3D11Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, Buffe
 	//Assign new data to be uploaded
 	if (dataMat)
 	{
-		dataMat->world = transformMat;
+		dataMat->world = ToShaderLayout(transformMat);
 	}
 
 	//Unmap to confirm upload and discard old data
@@ -741,7 +741,7 @@ void D3D11Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, Buffe
 void D3D11Renderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
 	worldLocalBuffer.eye = eye;
-	worldLocalBuffer.projView = viewProj;
+	worldLocalBuffer.projView = ToShaderLayout(viewProj);
 }
 
 void D3D11Renderer::ClearLights()
@@ -751,6 +751,7 @@ void D3D11Renderer::ClearLights()
 
 void D3D11Renderer::SetLight(GpuLight lightDescriptor)
 {
+	lightDescriptor.transform = ToShaderLayout(lightDescriptor.transform);
 	lights.push_back(lightDescriptor);
 }
 

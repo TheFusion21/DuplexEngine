@@ -3,6 +3,8 @@
 #include "../components/meshrenderer.h"
 #include "../coordinator.h"
 #include "renderer.h"
+#include "simd/transformbatch.h"
+#include <vector>
 namespace Engine::ECS
 {
 	class MeshSystem : public System
@@ -10,11 +12,34 @@ namespace Engine::ECS
 	public:
 		void Update(Coordinator& coord, DUPLEX_NS_GRAPHICS::Renderer& renderer)
 		{
+			// Gathered into contiguous arrays so world matrix composition can go through
+			// ComputeWorldMatricesBatch (see simd/transformbatch.h) - AVX2+FMA-accelerated
+			// when the running CPU supports it, otherwise the same per-entity composition this
+			// loop used to do inline.
+			std::vector<DUPLEX_NS_MATH::Vec3> positions;
+			std::vector<DUPLEX_NS_MATH::Quaternion> rotations;
+			std::vector<DUPLEX_NS_MATH::Vec3> scales;
+			std::vector<Entity> orderedEntities;
+			positions.reserve(entities.size());
+			rotations.reserve(entities.size());
+			scales.reserve(entities.size());
+			orderedEntities.reserve(entities.size());
 			for (auto const& entity : entities)
 			{
 				auto& transform = coord.GetComponent<Transform>(entity);
-				auto& mesh = coord.GetComponent<MeshRenderer>(entity);
-				DUPLEX_NS_MATH::Mat4x4 mat = DUPLEX_NS_MATH::Mat4x4::FromTranslation(transform.position) * DUPLEX_NS_MATH::Mat4x4::FromOrientation(transform.rotation) * DUPLEX_NS_MATH::Mat4x4::FromScale(transform.scale);
+				positions.push_back(transform.position);
+				rotations.push_back(transform.rotation);
+				scales.push_back(transform.scale);
+				orderedEntities.push_back(entity);
+			}
+
+			std::vector<DUPLEX_NS_MATH::Mat4x4> worldMatrices(orderedEntities.size());
+			DUPLEX_NS_SIMD::ComputeWorldMatricesBatch(positions.data(), rotations.data(), scales.data(), worldMatrices.data(), static_cast<unsigned int>(orderedEntities.size()));
+
+			for (size_t entityIndex = 0; entityIndex < orderedEntities.size(); entityIndex++)
+			{
+				auto& mesh = coord.GetComponent<MeshRenderer>(orderedEntities[entityIndex]);
+				const DUPLEX_NS_MATH::Mat4x4& mat = worldMatrices[entityIndex];
 				for (ui32 i = 0;i<mesh.mesh.subMeshes.size();i++)
 				{
 					if (mesh.materials.size() > i)

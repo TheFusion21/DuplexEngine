@@ -23,6 +23,9 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/math/mathutils.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/quaternion.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/types.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/math/fixed.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec3fixed.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/math/mat4x4fixed.h"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/color.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/util.h"
@@ -34,19 +37,20 @@ target_sources(
         
         # "${CMAKE_CURRENT_SOURCE_DIR}/utils/singleton.h"
 
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/cpufeatures.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/transformbatch.h"
+
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
 
-        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2int.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/math/vec3.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/math/mat4x4.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/math/quaternion.cpp"
-
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/color.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/containers/tinythread.cpp"
+
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/cpufeatures.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/transformbatch_baseline.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/transformbatch_avx2.cpp"
 )
 # set additional target properties
 set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFIX ".debug")
@@ -57,4 +61,34 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFI
 # most of which already add this manually today.
 target_include_directories(${TARGET_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_SOURCE_DIR}/engine.glm"
 )
+
+# GLM_FORCE_DEPTH_ZERO_TO_ONE: D3D/Vulkan both use a [0,1] NDC depth range, not OpenGL's
+# default [-1,1] - verified empirically (see conv_check throwaway test from the migration)
+# that this exactly reproduces the old hand-rolled Mat4x4::FromPerspectiveFOV's output.
+# GLM_FORCE_RADIANS: this project always passes/expects radians at the glm call boundary.
+# PUBLIC so every consumer's translation units agree (mixing these across TUs that both
+# touch the same glm types is an ODR violation).
+target_compile_definitions(${TARGET_NAME} PUBLIC
+    GLM_FORCE_DEPTH_ZERO_TO_ONE
+    GLM_FORCE_RADIANS
+    GLM_FORCE_INTRINSICS
+)
+
+# transformbatch_avx2.cpp is the one translation unit allowed to emit AVX2/FMA instructions -
+# everything else in the binary stays on the safe SSE2 baseline (guaranteed present on any
+# x86-64 CPU) so the binary doesn't crash with an illegal instruction on older hardware.
+# CpuFeatures::Detect() checks AVX2/FMA support (including the OS XSAVE/YMM check, not just
+# the CPUID bit) at runtime before this code path is ever called - see simd/cpufeatures.h.
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/transformbatch_avx2.cpp"
+        PROPERTIES COMPILE_OPTIONS "/arch:AVX2"
+    )
+else()
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/simd/transformbatch_avx2.cpp"
+        PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma"
+    )
+endif()

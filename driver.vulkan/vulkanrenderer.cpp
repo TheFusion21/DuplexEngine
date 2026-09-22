@@ -598,7 +598,7 @@ void VulkanRenderer::CreateShader()
 void VulkanRenderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
     worldLocalBuffer.eye = eye;
-    worldLocalBuffer.projView = viewProj;
+    worldLocalBuffer.projView = ToShaderLayout(viewProj);
 }
 
 void VulkanRenderer::ClearLights()
@@ -608,6 +608,7 @@ void VulkanRenderer::ClearLights()
 
 void VulkanRenderer::SetLight(GpuLight lightDescriptor)
 {
+    lightDescriptor.transform = ToShaderLayout(lightDescriptor.transform);
     lights.push_back(lightDescriptor);
 }
 
@@ -1334,7 +1335,7 @@ void VulkanRenderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, Buff
 
     MappedBuffer& modelBuf = modelConstantBuffers[currentFrame * MAX_DRAWS_PER_FRAME + drawIndexThisFrame];
     modelConstant modelCB;
-    modelCB.world = transformMat;
+    modelCB.world = ToShaderLayout(transformMat);
     memcpy(modelBuf.mapped, &modelCB, sizeof(modelConstant));
 
     VkDescriptorSetAllocateInfo setAllocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };

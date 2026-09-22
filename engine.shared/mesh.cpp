@@ -320,8 +320,8 @@ Mesh Engine::Resources::Mesh::LoadOBJ(const char* filename)
 		}
 		for (int i = 0; i < sm.vertices.size(); i ++)
 		{
-			sm.vertices[i].tangent.Normalize();
-			//sm.vertices[i].bitTangent.Normalize();
+			sm.vertices[i].tangent = glm::normalize(sm.vertices[i].tangent);
+			//sm.vertices[i].bitTangent = glm::normalize(sm.vertices[i].bitTangent);
 		}
 		m.subMeshes.push_back(sm);
 	}

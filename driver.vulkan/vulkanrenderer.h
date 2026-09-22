@@ -46,11 +46,8 @@ namespace DUPLEX_NS_GRAPHICS
 		VkSurfaceFormatKHR swapchainImageFormat;
 		VkExtent2D swapchainExtent;
 		VkSwapchainKHR swapchain;
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-		HINSTANCE connection;
-#endif
 	public:
-		bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height);
+		bool Init(SDL_Window* window, ui32 width, ui32 height);
 		void SetViewPort();
 		void CreateShader();
 		void SetActiveCamera(DUPLEX_NS_MATH::Vec3 eye, DUPLEX_NS_MATH::Mat4x4 viewProj);
@@ -80,8 +77,8 @@ namespace DUPLEX_NS_GRAPHICS
 			std::vector<VkSurfaceFormatKHR> formats;
 			std::vector<VkPresentModeKHR> presentModes;
 		};
-		void GetRequiredExtension(std::vector<const char*>& extensionNames);
-		void CreateSurface(ui64 instance, ui64 handle);
+		void GetRequiredExtension(SDL_Window* window, std::vector<const char*>& extensionNames);
+		void CreateSurface(SDL_Window* window);
 		VkPhysicalDevice SelectPhysicalDevice();
 		bool PhysicalDeviceMeetsRequirements(VkPhysicalDevice physicalDevice);
 		void DetectQueueFamilyIndices(VkPhysicalDevice physicalDevice, int* graphicsQueueIndex, int* presentQueueIndex);

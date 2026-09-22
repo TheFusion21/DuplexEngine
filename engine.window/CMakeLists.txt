@@ -16,6 +16,8 @@ target_sources(
 )
 target_link_libraries(${TARGET_NAME}
     engine.shared
+    driver.graphics
+    SDL2::SDL2
 )
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/engine.shared"

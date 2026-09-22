@@ -10,7 +10,6 @@ target_sources(
     ${TARGET_NAME}
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/appinfo.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/results.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/namespaces.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/vertex.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.h"

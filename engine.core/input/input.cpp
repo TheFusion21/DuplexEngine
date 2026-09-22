@@ -1,49 +1,54 @@
 #include "input.h"
 #include "utils/util.h"
-#include <windows.h>
-#include <iostream>
+#include <SDL.h>
 
 
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_MATH;
 
-Input::KeyState* Input::keyStates;
+Input::KeyState* Input::keyStates = nullptr;
+ui32 Input::keyStateCount = 0;
 
 Vec2 Input::_mousePosition = Vec2::Zero;
 const Vec2& Input::mousePosition = Input::_mousePosition;
 
 void Input::Init()
 {
-	keyStates = new KeyState[0xFF];
-	for (int i = 0x01; i < 0xFF; i++)
+	int count = 0;
+	SDL_GetKeyboardState(&count);
+	keyStateCount = static_cast<ui32>(count);
+	keyStates = new KeyState[keyStateCount];
+	for (ui32 i = 0; i < keyStateCount; i++)
 	{
 		keyStates[i] = KeyState::NONE;
 	}
-	POINT pos;
-	GetCursorPos(&pos);
-	_mousePosition.x = static_cast<real>(pos.x);
-	_mousePosition.y = static_cast<real>(pos.y);
+
+	int x = 0, y = 0;
+	SDL_GetMouseState(&x, &y);
+	_mousePosition.x = static_cast<real>(x);
+	_mousePosition.y = static_cast<real>(y);
 }
 
 void Input::Update()
 {
-	POINT pos;
-	GetCursorPos(&pos);
-	_mousePosition.x = static_cast<real>(pos.x);
-	_mousePosition.y = static_cast<real>(pos.y);
-	for (int i = 0x01; i < 0xFF; i++)
+	int x = 0, y = 0;
+	SDL_GetMouseState(&x, &y);
+	_mousePosition.x = static_cast<real>(x);
+	_mousePosition.y = static_cast<real>(y);
+
+	for (ui32 i = 0; i < keyStateCount; i++)
 	{
 		if (keyStates[i] == KeyState::PRESSED)
 			keyStates[i] = KeyState::DOWN;
 		else if (keyStates[i] == KeyState::RELEASED)
 			keyStates[i] = KeyState::NONE;
 	}
-	for (int i = 0x01; i < 0xFF; i++)
+
+	const Uint8* sdlKeyStates = SDL_GetKeyboardState(nullptr);
+	for (ui32 i = 0; i < keyStateCount; i++)
 	{
-		if ((::GetAsyncKeyState(i) & 0x8000) != 0)
+		if (sdlKeyStates[i])
 		{
-			//std::cout << "is down" << std::endl;
-			//std::cout << "ks is: " << (keyStates[i] == KeyState::NONE ? "NONE" : (keyStates[i] == KeyState::PRESSED ? "PRESSED" : (keyStates[i] == KeyState::DOWN ? "DOWN" : "RELEASED"))) << std::endl;
 			if (keyStates[i] == KeyState::NONE || keyStates[i] == KeyState::RELEASED)
 			{
 				keyStates[i] = KeyState::PRESSED;
@@ -58,15 +63,21 @@ void Input::Update()
 
 bool Input::GetKey(int keycode)
 {
+	if (keycode < 0 || static_cast<ui32>(keycode) >= keyStateCount)
+		return false;
 	return (keyStates[keycode] == KeyState::PRESSED || keyStates[keycode] == KeyState::DOWN);
 }
 
 bool Input::GetKeyDown(int keycode)
 {
+	if (keycode < 0 || static_cast<ui32>(keycode) >= keyStateCount)
+		return false;
 	return keyStates[keycode] == KeyState::PRESSED;
 }
 
 bool Input::GetKeyUp(int keycode)
 {
+	if (keycode < 0 || static_cast<ui32>(keycode) >= keyStateCount)
+		return false;
 	return keyStates[keycode] == KeyState::RELEASED;
 }

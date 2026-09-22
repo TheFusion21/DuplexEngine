@@ -15,8 +15,6 @@
 using namespace DUPLEX_NS_EDITOR;
 using namespace DUPLEX_NS_WINDOW;
 using namespace DUPLEX_NS_CONFIG;
-using namespace DUPLEX_NS_MATH;
-using namespace DUPLEX_NS_UTIL;
 
 bool Editor::InitEditor(std::string file)
 {
@@ -25,14 +23,7 @@ bool Editor::InitEditor(std::string file)
 
 bool Editor::InitProjectExplorer()
 {
-    WindowCreateInfo wci = {};
-    wci.windowName = "Duplex Project Hub";
-    wci.position = defaultPosition;
-    wci.resolution = Vec2Int(800, 500);
-    if (windowManager.AddWindow(&wci, &window) != DRESULT::OK)
-        return false;
-
-    return true;
+    return window.Init("Duplex Project Hub", 800, 500);
 }
 
 bool Editor::Init(std::string file)
@@ -52,9 +43,8 @@ bool Editor::Init(std::string file)
 }
 void Editor::Run()
 {
-    while (!window->shouldClose)
+    while (window.PollEvents())
     {
-        windowManager.PollForEvents();
     }
 }
 void Editor::Shutdown()
@@ -75,7 +65,7 @@ void Editor::Shutdown()
 
         configFile.close();
     }
-    windowManager.Shutdown();
+    window.Shutdown();
 }
 
 std::string Editor::OpenFileDialog(std::string extFilter)

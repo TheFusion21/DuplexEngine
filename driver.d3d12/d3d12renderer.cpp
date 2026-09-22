@@ -8,7 +8,7 @@ using namespace DUPLEX_NS_UTIL;
 // have been compiled or run yet - this session has no Windows/MSVC toolchain available to
 // verify them. Treat as unverified until built on Windows.
 
-bool D3D12Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
+bool D3D12Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 {
 	this->width = width;
 	this->height = height;

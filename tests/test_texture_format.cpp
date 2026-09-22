@@ -15,7 +15,7 @@ namespace
 	class NullRenderer : public Renderer
 	{
 	public:
-		bool Init(ui64, ui64, ui32, ui32) override { return true; }
+		bool Init(SDL_Window*, ui32, ui32) override { return true; }
 		void SetViewPort() override {}
 		void CreateShader() override {}
 		void SetActiveCamera(DUPLEX_NS_MATH::Vec3, DUPLEX_NS_MATH::Mat4x4) override {}

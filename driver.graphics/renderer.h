@@ -7,6 +7,8 @@
 #include "shadercb.h"
 #include "namespaces.h"
 
+struct SDL_Window;
+
 namespace DUPLEX_NS_GRAPHICS
 {
 	class Renderer
@@ -27,7 +29,10 @@ namespace DUPLEX_NS_GRAPHICS
 		// backend's destructor instead of just Renderer's.
 		virtual ~Renderer() = default;
 
-		virtual bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height) = 0;
+		// window is the SDL2 window whatever caller (see Game::Client::Application) already
+		// created; each backend pulls whatever native handle it actually needs out of it
+		// (SDL_GetWindowWMInfo for D3D11's HWND, SDL_Vulkan_CreateSurface for Vulkan's surface).
+		virtual bool Init(SDL_Window* window, ui32 width, ui32 height) = 0;
 
 		virtual void SetViewPort() = 0;
 

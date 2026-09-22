@@ -40,3 +40,6 @@
 /lib
 
 bin/
+
+# Runtime config written by engine.editor next to wherever it's run from
+/EngineConfig.ini

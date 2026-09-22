@@ -4,8 +4,12 @@ SET(TARGET_NAME DuplexEngine.Editor)
 
 cmake_minimum_required (VERSION 3.9)
 
-# Add source to this project's executable.
-add_executable(${TARGET_NAME} "../res/appicon.ico" "../res/resources.rc")
+# Add source to this project's executable. The .ico/.rc pair is a Windows resource script
+# (embeds the exe icon) - only meaningful, and only buildable, on Windows.
+add_executable(${TARGET_NAME})
+if(WIN32)
+    target_sources(${TARGET_NAME} PRIVATE "../res/appicon.ico" "../res/resources.rc")
+endif()
 
 # add sources to target
 target_sources(

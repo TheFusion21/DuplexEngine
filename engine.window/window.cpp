@@ -1,507 +1,128 @@
 #include "window.h"
+#include "renderer.h"
+#include <SDL.h>
 
 using namespace DUPLEX_NS_WINDOW;
-using namespace DUPLEX_NS_MATH;
-using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_GRAPHICS;
 
-
-Window::Window(const WindowCreateInfo* pWindowCreateInfo)
+bool Window::Init(const char* title, ui32 width, ui32 height, bool vulkanSupport)
 {
-	this->name = pWindowCreateInfo->windowName;
-	this->resolution = pWindowCreateInfo->resolution;
-	this->position = pWindowCreateInfo->position;
-}
-#if defined(_WINDOWS)
-DRESULT Window::SetWindowSize(Vec2Int newResolution)
-{
-	this->resolution = newResolution;
-
-	return DRESULT::OK;
-}
-
-DRESULT Window::SetWindowPosition(Vec2Int newPosition)
-{
-	this->position = newPosition;
-
-	return DRESULT::OK;
-}
-DRESULT Window::SetMousePosition(Math::Vec2Int newMousePosition)
-{
-	return DRESULT::OK;
-}
-DRESULT Window::Minimize()
-{
-	return DRESULT();
-}
-DRESULT Window::Maximize()
-{
-	return DRESULT();
-}
-DRESULT Window::Restore()
-{
-	return DRESULT();
-}
-DRESULT Window::Focus()
-{
-	return DRESULT();
-}
-#elif defined(_LINUX)
-
-#endif
-
-
-WindowManager::WindowManager()
-{
-#if defined(_WINDOWS)
-	HWND desktopHandle = GetDesktopWindow();
-
-	if (desktopHandle)
+	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
 	{
-		GetScreenInfo();
-
-	}
-#endif 
-
-}
-
-WindowManager::~WindowManager()
-{
-	Shutdown();
-}
-
-void WindowManager::Shutdown()
-{
-	ResetDisplays();
-	for (auto window : windows)
-	{
-		ShutdownWindow(window);
-	}
-	windows.clear();
-}
-
-
-DRESULT WindowManager::AddWindow(const WindowCreateInfo* pWindowCreateInfo, Window** window)
-{
-	if (pWindowCreateInfo != nullptr)
-	{
-		WindowCreateInfo wdi = {};
-		if (pWindowCreateInfo->resolution == Vec2Int(0, 0))
-			wdi.resolution = defaultResolution;
-		else
-			wdi.resolution = pWindowCreateInfo->resolution;
-
-		Window* newWindow = new Window(pWindowCreateInfo);
-		windows.push_back(newWindow);
-		InitializeWindow(windows.back());
-
-		*window = newWindow;
-		return DRESULT::OK;
-	}
-	
-	return DRESULT::INVALIDCREATEINFO;
-}
-
-#if defined(_WINDOWS)
-void WindowManager::PollForEvents()
-{
-	while (PeekMessage(&winMessage, nullptr, 0, 0, PM_REMOVE))
-	{
-		//the only place I can see this being needed if someone called PostQuitMessage manually
-		TranslateMessage(&winMessage);
-		DispatchMessage(&winMessage);
-		if (winMessage.message == WM_QUIT)
+		if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		{
-			Shutdown();
+			return false;
 		}
 	}
-}
-#elif defined(_LINUX)
-inline void WindowManager::PollForEvents()
-{
 
-}
-#endif
-Display* WindowManager::GetMonitorByHandle(std::string const& displayName)
-{
-	for (auto& display : displays)
+	Uint32 flags = SDL_WINDOW_RESIZABLE;
+	if (vulkanSupport)
 	{
-		if (displayName.compare(display->displayName) == 0)
-		{
-			return display;
-		}
-	}
-	return nullptr;
-}
-Window* WindowManager::GetWindowByHandle(HWND windowHandle)
-{
-	for (auto& window : windows)
-	{
-		if (window->windowHandle == windowHandle)
-		{
-			return window;
-		}
-	}
-	return nullptr;
-}
-
-#if defined(_WINDOWS)
-LRESULT WindowManager::WindowProcedure(HWND windowHandle, unsigned int winMessage, WPARAM wordParam, LPARAM longParam)
-{
-	WindowManager* manager = reinterpret_cast<WindowManager*>(GetWindowLongPtr(windowHandle, GWLP_USERDATA));
-
-	Window* window = nullptr;
-	if (manager)
-	{
-		window = manager->GetWindowByHandle(windowHandle);
+		flags |= SDL_WINDOW_VULKAN;
 	}
 
-	switch (winMessage)
+	window = SDL_CreateWindow(
+		title,
+		SDL_WINDOWPOS_UNDEFINED,
+		SDL_WINDOWPOS_UNDEFINED,
+		static_cast<int>(width),
+		static_cast<int>(height),
+		flags
+	);
+	return window != nullptr;
+}
+
+void Window::Shutdown()
+{
+	if (window)
 	{
-		case WM_DESTROY:
-		{
-			if (manager && window)
-			{
-				window->shouldClose = true;
-
-			}
-			break;
-		}
-		case WM_MOVE:
-		{
-			if (window && manager)
-			{
-				window->position.x = LOWORD(longParam);
-				window->position.y = HIWORD(longParam);
-				manager->CheckWindowScreen(window);
-			}
-			break;
-		}
-		case WM_MOVING:
-		{
-			if (window && manager)
-			{
-				window->position.x = LOWORD(longParam);
-				window->position.y = HIWORD(longParam);
-			}
-			break;
-		}
-		case WM_SIZE:
-		{
-			if (window && manager)
-			{
-				window->clientArea.x = (ui32)LOWORD(longParam);
-				window->clientArea.y = (ui32)HIWORD(longParam);
-
-				switch (wordParam)
-				{
-					case SIZE_MAXIMIZED:
-					{
-						break;
-					}
-					case SIZE_MINIMIZED:
-					{
-						break;
-					}
-					default:
-					{
-						break;
-					}
-				}
-			}
-			break;
-		}
-		case WM_SIZING:
-		{
-			if (window && manager)
-			{
-				window->resolution.x = (unsigned int)LOWORD(longParam);
-				window->resolution.y = (unsigned int)HIWORD(longParam);
-			}
-			break;
-		}
-		case WM_INPUT:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_CHAR:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_KEYDOWN:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_KEYUP:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_SYSKEYDOWN:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_SYSKEYUP:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_MOUSEMOVE:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_LBUTTONDOWN:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_LBUTTONUP:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_RBUTTONDOWN:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_RBUTTONUP:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_MBUTTONDOWN:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_MBUTTONUP:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_MOUSEWHEEL:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_SETFOCUS:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_KILLFOCUS:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		case WM_DROPFILES:
-		{
-			if (window && manager)
-			{
-
-			}
-			break;
-		}
-		default:
-		{
-			return DefWindowProc(windowHandle, winMessage, wordParam, longParam);
-		}
+		SDL_DestroyWindow(window);
+		window = nullptr;
 	}
-	return 0;
+	SDL_Quit();
 }
-void WindowManager::InitializeWindow(Window* window)
+
+void Window::Show()
 {
-	window->instanceHandle = GetModuleHandle(nullptr);
-	window->windowClass = {};
-	window->windowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW | CS_DROPSHADOW;
-	window->windowClass.lpfnWndProc = WindowManager::WindowProcedure;
-	window->windowClass.hInstance = window->instanceHandle;
-	window->windowClass.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-	window->windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	window->windowClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	window->windowClass.lpszMenuName = window->name;
-	window->windowClass.lpszClassName = window->name;
-	RegisterClass(&window->windowClass);
-
-	window->windowHandle = CreateWindow(window->name, window->name, WS_OVERLAPPEDWINDOW
-		,window->position.x, window->position.y
-		,window->resolution.x, window->resolution.y
-		,nullptr, nullptr, nullptr, nullptr);
-
-	SetWindowLongPtr(window->windowHandle, GWLP_USERDATA, (LONG_PTR)this);
-
-	ShowWindow(window->windowHandle, SW_SHOWNORMAL);
-	UpdateWindow(window->windowHandle);
-
-	
-	CheckWindowScreen(window);
-	/*
-	window->SetStyle(style_t::normal);
-	*/
-	DragAcceptFiles(window->windowHandle, true);
-
+	SDL_ShowWindow(window);
 }
-void WindowManager::ShutdownWindow(Window* window)
+
+void Window::Hide()
 {
-	window->shouldClose = true;
-	UnregisterClass(window->name, window->instanceHandle);
-	FreeModule(window->instanceHandle);
-
-	window->windowHandle = nullptr;
-
-	for (auto it = windows.begin(); it != windows.end(); ++it)
-	{
-		if (window == *it)
-		{
-			windows.erase(it);
-			break;
-		}
-	}
+	SDL_HideWindow(window);
 }
-void WindowManager::GetScreenInfo()
+
+void Window::Maximize()
 {
-	DISPLAY_DEVICE graphicsDevice;
-	graphicsDevice.cb = sizeof(DISPLAY_DEVICE);
-	graphicsDevice.StateFlags = DISPLAY_DEVICE_ATTACHED_TO_DESKTOP;
-	DWORD deviceNum = 0;
-	DWORD monitorNum = 0;
-	while (EnumDisplayDevices(nullptr, deviceNum, &graphicsDevice, EDD_GET_DEVICE_INTERFACE_NAME))
-	{
-		DISPLAY_DEVICE monitorDevice = { 0 };
-		monitorDevice.cb = sizeof(DISPLAY_DEVICE);
-		monitorDevice.StateFlags = DISPLAY_DEVICE_ATTACHED_TO_DESKTOP;
-
-		Display* display = nullptr;
-
-		while (EnumDisplayDevices(graphicsDevice.DeviceName, monitorNum, &monitorDevice, EDD_GET_DEVICE_INTERFACE_NAME))
-		{
-			display = new Display();
-			display->displayName = graphicsDevice.DeviceName;
-			display->deviceName = graphicsDevice.DeviceString;
-			display->monitorName = graphicsDevice.DeviceString;
-			display->isPrimary = (graphicsDevice.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE) == DISPLAY_DEVICE_PRIMARY_DEVICE;
-
-			DEVMODE devmode = {};
-			unsigned int modeIndex = UINT_MAX;
-			while (EnumDisplaySettings(graphicsDevice.DeviceName, modeIndex, &devmode))
-			{
-				if (modeIndex == ENUM_CURRENT_SETTINGS)
-				{
-					display->currentSetting = new DisplaySettings();
-					display->currentSetting->resolution.x = devmode.dmPelsWidth;
-					display->currentSetting->resolution.y = devmode.dmPelsHeight;
-					display->currentSetting->bpp = devmode.dmBitsPerPel;
-					display->currentSetting->refreshRate = devmode.dmDisplayFrequency;
-				}
-				else
-				{
-					DisplaySettings* newSettings = new DisplaySettings();
-					newSettings->resolution.x = devmode.dmPelsWidth;
-					newSettings->resolution.y = devmode.dmPelsHeight;
-					newSettings->bpp = devmode.dmBitsPerPel;
-					newSettings->refreshRate = devmode.dmDisplayFrequency;
-					display->settings.push_back(newSettings);
-				}
-				modeIndex++;
-			}
-			displays.push_back(display);
-			monitorNum++;
-			monitorDevice.StateFlags = DISPLAY_DEVICE_ATTACHED_TO_DESKTOP;
-		}
-		deviceNum++;
-		monitorNum = 0;
-	}
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProcedure, (LPARAM)this);
+	SDL_MaximizeWindow(window);
 }
-BOOL WindowManager::MonitorEnumProcedure(HMONITOR monitorHandle, HDC monitorDeviceContextHandle, LPRECT monitorSize, LPARAM userData)
+
+void Window::Minimize()
 {
-	WindowManager* manager = reinterpret_cast<WindowManager*>(userData);
+	SDL_MinimizeWindow(window);
+}
 
-	MONITORINFOEX info = {};
-	info.cbSize = sizeof(info);
-	GetMonitorInfo(monitorHandle, &info);
+void Window::SetTitle(const char* title)
+{
+	SDL_SetWindowTitle(window, title);
+}
 
-	Display* display = manager->GetMonitorByHandle(info.szDevice);
-	display->monitorHandle = monitorHandle;
-	display->extends = { monitorSize->top, monitorSize->left, monitorSize->right, monitorSize->bottom };
+bool Window::GetClientSize(ui32& width, ui32& height) const
+{
+	int w = 0, h = 0;
+	SDL_GetWindowSize(window, &w, &h);
+	width = static_cast<ui32>(w);
+	height = static_cast<ui32>(h);
 	return true;
 }
 
-void WindowManager::CheckWindowScreen(Window* window)
+bool Window::IsFocused() const
 {
-	HMONITOR currentHandle = MonitorFromWindow(window->windowHandle, MONITOR_DEFAULTTONEAREST);
-	for (auto& display : displays)
+	return hasFocus;
+}
+
+bool Window::PollEvents()
+{
+	SDL_Event event;
+	while (SDL_PollEvent(&event))
 	{
-		if (display->monitorHandle == currentHandle)
+		if (event.type == SDL_QUIT)
 		{
-			window->currentDisplay = display;
+			return false;
+		}
+		if (event.type == SDL_WINDOWEVENT && event.window.windowID == SDL_GetWindowID(window))
+		{
+			switch (event.window.event)
+			{
+			case SDL_WINDOWEVENT_CLOSE:
+				return false;
+			case SDL_WINDOWEVENT_RESIZED:
+			case SDL_WINDOWEVENT_SIZE_CHANGED:
+				if (renderer)
+				{
+					ui32 width, height;
+					GetClientSize(width, height);
+					renderer->Resize(width, height);
+				}
+				break;
+			case SDL_WINDOWEVENT_FOCUS_GAINED:
+				hasFocus = true;
+				break;
+			case SDL_WINDOWEVENT_FOCUS_LOST:
+				hasFocus = false;
+				break;
+			}
 		}
 	}
-
+	return true;
 }
-void WindowManager::ResetDisplays()
+
+void Window::SetRenderer(Renderer* renderer)
 {
-	for (auto display : displays)
-	{
-		ChangeDisplaySettingsEx(display->displayName.c_str(), nullptr, nullptr, CDS_FULLSCREEN, nullptr);
-	}
+	this->renderer = renderer;
 }
-#elif defined(_LINUX)
 
-
-#endif
-
-
+SDL_Window* Window::GetSDLWindow() const
+{
+	return window;
+}

@@ -5,6 +5,8 @@
 #include "math/mathutils.h"
 #include "utils/util.h"
 #include <cstring>
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
@@ -55,7 +57,7 @@ PFN_vkGetDeviceProcAddr VulkanRenderer::g_gdpa = nullptr;
             return false;																								\
         }																												\
     }
-bool VulkanRenderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
+bool VulkanRenderer::Init(SDL_Window* window, ui32 width, ui32 height)
 {
     this->width = width;
     this->height = height;
@@ -70,7 +72,7 @@ bool VulkanRenderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
     instanceCreateInfo.pApplicationInfo = &appInfo;
 
     std::vector<const char*> platformExtensions;
-    this->GetRequiredExtension(platformExtensions);
+    this->GetRequiredExtension(window, platformExtensions);
 
     instanceCreateInfo.enabledExtensionCount = static_cast<ui32>(platformExtensions.size());
     instanceCreateInfo.ppEnabledExtensionNames = platformExtensions.data();
@@ -115,7 +117,7 @@ bool VulkanRenderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
     ASSERT_MSG(func, "Failed to create debug messenger");
     func(this->instance, &debugCreateInfo, nullptr, &this->debugMessenger);
 
-    this->CreateSurface(instance, handle);
+    this->CreateSurface(window);
     this->physicalDevice = this->SelectPhysicalDevice();
     this->CreateLogicalDevice();
     //TODO: CREATE SHADER
@@ -207,80 +209,29 @@ void VulkanRenderer::ReleaseBuffer(BufferHandle& buffer)
 {
 }
 
-void VulkanRenderer::GetRequiredExtension(std::vector<const char*>& extensionNames)
+void VulkanRenderer::GetRequiredExtension(SDL_Window* window, std::vector<const char*>& extensionNames)
 {
-    extensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    // SDL already knows which surface extension the current platform needs (win32/xlib/
+    // wayland/...) and returns VK_KHR_surface plus that one - no more per-platform
+    // VK_USE_PLATFORM_* branching (the previous version's non-Win32 branches were unfinished
+    // stubs that created nothing).
+    ui32 sdlExtensionCount = 0;
+    SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, nullptr);
+    ui32 offset = static_cast<ui32>(extensionNames.size());
+    extensionNames.resize(offset + sdlExtensionCount);
+    SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, extensionNames.data() + offset);
+
 #if defined(ENGINE_COMPILE_DEBUG)
     extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    extensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    extensionNames.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-    extensionNames.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    extensionNames.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-    extensionNames.push_back(VK_KHR_DISPLAY_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    extensionNames.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    extensionNames.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
-#endif
 }
 
-void VulkanRenderer::CreateSurface(ui64 instance, ui64 handle)
+void VulkanRenderer::CreateSurface(SDL_Window* window)
 {
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = { VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR };
-    surfaceCreateInfo.pNext = NULL;
-    surfaceCreateInfo.flags = 0;
-    surfaceCreateInfo.hinstance = reinterpret_cast<HINSTANCE>(instance);
-    surfaceCreateInfo.hwnd = reinterpret_cast<HWND>(handle);
-
-    VK_CHECK(vkCreateWin32SurfaceKHR(this->instance, &surfaceCreateInfo, NULL, &this->surface));
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    VkWaylandSurfaceCreateInfoKHR surfaceCreateInfo = { VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR };
-    //createInfo.pNext = NULL;
-    //createInfo.flags = 0;
-    //createInfo.display = demo->display;
-    //createInfo.surface = demo->window;
-    //
-    //err = vkCreateWaylandSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-    VkXcbSurfaceCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR };
-    //createInfo.pNext = NULL;
-    //createInfo.flags = 0;
-    //createInfo.connection = demo->connection;
-    //createInfo.window = demo->xcb_window;
-
-    //err = vkCreateXcbSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    VkWaylandSurfaceCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR };
-    //createInfo.pNext = NULL;
-    //createInfo.flags = 0;
-    //createInfo.display = demo->display;
-    //createInfo.surface = demo->window;
-    //
-    //err = vkCreateWaylandSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_DISPLAY_KHR)
-
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    VkAndroidSurfaceCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR };
-    //createInfo.pNext = NULL;
-    //createInfo.flags = 0;
-    //createInfo.window = (struct ANativeWindow*)(demo->window);
-
-    //err = vkCreateAndroidSurfaceKHR(demo->inst, &createInfo, NULL, &demo->surface);
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    VkMetalSurfaceCreateInfoEXT surface = { VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT };
-    //surface.pNext = NULL;
-    //surface.flags = 0;
-    //surface.pLayer = demo->caMetalLayer;
-    //
-    //err = vkCreateMetalSurfaceEXT(demo->inst, &surface, NULL, &demo->surface);
-#endif
+    if (!SDL_Vulkan_CreateSurface(window, this->instance, &this->surface))
+    {
+        throw std::string(SDL_GetError());
+    }
 }
 
 

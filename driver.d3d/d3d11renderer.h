@@ -60,7 +60,7 @@ namespace DUPLEX_NS_GRAPHICS
 		///
 		/// </summary>
 		/// <returns>init was successful</returns>
-		bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height);
+		bool Init(SDL_Window* window, ui32 width, ui32 height);
 
 		void SetViewPort();
 

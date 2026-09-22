@@ -2,7 +2,11 @@
 // INTERNAL INCLUDES
 #include "client.h"
 #include "math/types.h"
+#if defined(_WIN32)
 #include "d3d11renderer.h"
+#else
+#include "vulkanrenderer.h"
+#endif
 #include "enginetime.h"
 #include "input/input.h"
 #include "graphics/light.h"
@@ -17,13 +21,25 @@ using namespace Engine::ECS;
 void Application::Init()
 {
 	AnsiString name = "PR210 Engine";
-	window.Init(name, 1280, 720);
+#if defined(_WIN32)
+	bool windowReady = window.Init(name, 1280, 720);
+#else
+	bool windowReady = window.Init(name, 1280, 720, true);
+#endif
+	if (!windowReady)
+	{
+		return;
+	}
 	window.Show();
 	window.SetTitle("THIS IS A Engine");
+#if defined(_WIN32)
 	renderer = std::make_unique<D3D11Renderer>();
+#else
+	renderer = std::make_unique<VulkanRenderer>();
+#endif
 	ui32 width, height;
 	window.GetClientSize(width, height);
-	if (!renderer->Init(window.GetInstance(), window.GetHandle(), width, height))
+	if (!renderer->Init(window.GetSDLWindow(), width, height))
 	{
 		return;
 	}
@@ -105,10 +121,11 @@ void Application::Run()
 		renderer->BeginScene();
 		meshSystem->Update(coordinator, *renderer);
 		renderer->EndScene();
-		if (!window.MessagePump())
+		if (!window.PollEvents())
 		{
 			this->appState = AppState::Stopped;
 		}
+		Input::Update();
 		Transform& t = coordinator.GetComponent<Transform>(dirLight);
 		t.rotation = Quaternion::FromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
@@ -121,5 +138,11 @@ void Application::Run()
 
 void Application::Shutdown()
 {
-	renderer->Shutdown();
+	// renderer can still be null here: main() always calls Shutdown() after Init(), even if
+	// Init() bailed out before constructing it (e.g. window.Init() failing).
+	if (renderer)
+	{
+		renderer->Shutdown();
+	}
+	window.Shutdown();
 }

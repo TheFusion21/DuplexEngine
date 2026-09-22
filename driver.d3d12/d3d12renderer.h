@@ -31,7 +31,7 @@ namespace DUPLEX_NS_GRAPHICS
 		ui32 frameIndex = 0;
 
 	public:
-		bool Init(ui64 instance, ui64 handle, ui32 width, ui32 height) override;
+		bool Init(SDL_Window* window, ui32 width, ui32 height) override;
 
 		void SetViewPort() override;
 

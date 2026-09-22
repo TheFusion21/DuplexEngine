@@ -32,6 +32,10 @@ jobs:
       - name: Install software Vulkan driver (lavapipe)
         run: sudo apt-get install -y mesa-vulkan-drivers
 
+      # engine.window/driver.vulkan/driver.d3d all need SDL2 now.
+      - name: Install SDL2
+        run: sudo apt-get install -y libsdl2-dev
+
       # engine.spirv (the vendored SPIRV-Cross submodule) declares a cmake_minimum_required
       # far below what current CMake still accepts; CMAKE_POLICY_VERSION_MINIMUM is CMake's
       # own documented escape hatch for exactly this (set externally, not in our CMakeLists.txt
@@ -75,13 +79,30 @@ jobs:
           }
           Add-Content -Path $env:GITHUB_PATH -Value $dxcDir
 
+      # engine.window/driver.vulkan/driver.d3d all need SDL2 now. No CMake-config-providing
+      # package manager is preinstalled here, so this fetches the official prebuilt MSVC devel
+      # package directly from SDL's own GitHub releases (verified this exact URL resolves).
+      - name: Install SDL2
+        shell: pwsh
+        run: |
+          $sdlVersion = "2.32.10"
+          $sdlUrl = "https://github.com/libsdl-org/SDL/releases/download/release-$sdlVersion/SDL2-devel-$sdlVersion-VC.zip"
+          Invoke-WebRequest -Uri $sdlUrl -OutFile sdl2.zip
+          Expand-Archive -Path sdl2.zip -DestinationPath sdl2_extracted
+          $sdlRoot = (Get-ChildItem -Path sdl2_extracted -Directory | Select-Object -First 1).FullName
+          $cmakeDir = Join-Path $sdlRoot "cmake"
+          if (-not (Test-Path (Join-Path $cmakeDir "sdl2-config.cmake"))) {
+            throw "sdl2-config.cmake not found under $cmakeDir - SDL2-devel zip layout may have changed."
+          }
+          Add-Content -Path $env:GITHUB_ENV -Value "SDL2_DIR=$cmakeDir"
+
       # cmd, not the default pwsh: PowerShell's native-command argument tokenizer has known
       # bugs mangling "-Dvar=3.5"-style flags (splits on the '.', see
       # https://github.com/PowerShell/PowerShell/issues/19451 and #21460) - cmd's plain
       # whitespace-only argument splitting doesn't have that problem.
       - name: Configure
         shell: cmd
-        run: cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        run: cmake -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DSDL2_DIR=%SDL2_DIR%
 
       - name: Build
         shell: cmd

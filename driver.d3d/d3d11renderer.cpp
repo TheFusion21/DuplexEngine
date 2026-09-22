@@ -4,6 +4,8 @@
 #include <iostream>
 #define NOMINMAX
 #include <d3dcompiler.h>
+#include <SDL.h>
+#include <SDL_syswm.h>
 // INTERNAL INCLUDES
 #include "d3d11renderer.h"
 #include "utils/util.h"
@@ -21,10 +23,20 @@ using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_GRAPHICS;
 
 
-bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
+bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 {
 	this->width = width;
 	this->height = height;
+
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	if (!SDL_GetWindowWMInfo(window, &wmInfo))
+	{
+		MessageBoxA(NULL, "Could not get native window handle from SDL", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return false;
+	}
+	HWND hwnd = wmInfo.info.win.window;
+
 	IDXGIFactory1 * factory = nullptr;
 	if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory))))
 	{
@@ -95,7 +107,7 @@ bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
 		printf("Graphics Device: %s\n", adapterDescText);
 		printf("Graphics available Memory: %d MB\n", static_cast<ui32>(adapterDesc.DedicatedVideoMemory * 9.5367E-7f));
 	}
-	factory->MakeWindowAssociation(reinterpret_cast<HWND>(handle), DXGI_MWA_NO_ALT_ENTER);
+	factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 	//Release and delete stuff we don't need anymore in next code section
 	SAFEDELETEARR(modes);
 
@@ -120,7 +132,7 @@ bool D3D11Renderer::Init(ui64 instance, ui64 handle, ui32 width, ui32 height)
 	//mark this buffer for output
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	//assign our created window to it
-	swapChainDesc.OutputWindow = reinterpret_cast<HWND>(handle);
+	swapChainDesc.OutputWindow = hwnd;
 	// make lowest sampler
 	swapChainDesc.SampleDesc.Count = 1;
 	swapChainDesc.SampleDesc.Quality = 0;

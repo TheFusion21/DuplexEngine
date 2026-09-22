@@ -1,147 +1,56 @@
 #pragma once
-
 // EXTERNAL INCLUDES
-#include <vector>
-#include <string>
-#if defined(_WINDOWS)
-#include <Windows.h>
-#elif defined(_LINUX)
-
-#endif
 // INTERNAL INCLUDES
-#include "math/vec2.h"
-#include "math/vec2int.h"
-#include "results.h"
+#include "math/types.h"
+#include "namespaces.h"
+
+struct SDL_Window;
+
+namespace DUPLEX_NS_GRAPHICS
+{
+	class Renderer;
+}
 
 namespace DUPLEX_NS_WINDOW
 {
-
-	const DUPLEX_NS_MATH::Vec2Int defaultResolution = DUPLEX_NS_MATH::Vec2Int(1280, 720);
-#if defined(_WINDOWS)
-	const DUPLEX_NS_MATH::Vec2Int defaultPosition = DUPLEX_NS_MATH::Vec2Int(CW_USEDEFAULT, CW_USEDEFAULT);
-#elif defined(_LINUX)
-
-#endif
-	enum class WindowState
-	{
-		NORMAL,
-		MAXIMIZED,
-		MINIMIZED,
-		FULLSCREEN
-	};
-
-	struct DisplaySettings
-	{
-		DUPLEX_NS_MATH::Vec2Int resolution;
-		ui32 bpp;
-		ui32 refreshRate;
-		
-	};
-
-	struct Display
-	{
-		DisplaySettings* currentSetting;
-		std::vector<DisplaySettings*> settings;
-
-		struct Rect
-		{
-			int top, left, right, bottom;
-		} extends;
-
-		std::string deviceName;
-		std::string monitorName;
-		std::string displayName;
-		bool isPrimary;
-
-#if defined(_WINDOWS)
-		HMONITOR monitorHandle;
-#endif
-		Display()
-		{
-			currentSetting = nullptr;
-			isPrimary = false;
-			extends = {};
-
-		}
-	};
-	
-	struct WindowCreateInfo
-	{
-		const char* windowName;
-		DUPLEX_NS_MATH::Vec2Int resolution;
-		WindowState currentState;
-		DUPLEX_NS_MATH::Vec2Int position;
-	};
-
+	// Thin SDL2 wrapper for a single window. Both engine.client and engine.editor only ever
+	// need one window at a time, so there's no manager layer here - just this.
 	class Window
 	{
 	private:
-
-		friend class WindowManager;
-
-		const char* name;
-		DUPLEX_NS_MATH::Vec2Int resolution = defaultResolution;
-		Display* currentDisplay;
-		DUPLEX_NS_MATH::Vec2Int position;
-		DUPLEX_NS_MATH::Vec2Int mousePosition;
-		WindowState currentState = WindowState::NORMAL;
-#if defined(_WINDOWS)
-		HWND windowHandle = NULL;
-		HINSTANCE instanceHandle = NULL;
-		WNDCLASS windowClass = {};
-		DUPLEX_NS_MATH::Vec2Int clientArea;
-#elif defined(_LINUX)
-
-#endif
-		Window(const WindowCreateInfo* pWindowCreateInfo);
+		SDL_Window* window = nullptr;
+		bool hasFocus = false;
+		// Non-owning. Set once the Renderer exists (which needs the window first), so it can't
+		// just happen in Init(). Used by PollEvents() to forward resize events - SDL's own
+		// event queue replaces the WM_SIZE/WinProc callback pattern the old Win32 code used.
+		DUPLEX_NS_GRAPHICS::Renderer* renderer = nullptr;
 
 	public:
-		bool shouldClose = false;
-		DUPLEX_NS_UTIL::DRESULT SetWindowSize(DUPLEX_NS_MATH::Vec2Int newResolution);
-		DUPLEX_NS_UTIL::DRESULT SetWindowPosition(DUPLEX_NS_MATH::Vec2Int newPosition);
-		DUPLEX_NS_UTIL::DRESULT SetMousePosition(DUPLEX_NS_MATH::Vec2Int newMousePosition);
-		DUPLEX_NS_UTIL::DRESULT Minimize();
-		DUPLEX_NS_UTIL::DRESULT Maximize();
-		DUPLEX_NS_UTIL::DRESULT Restore();
-		DUPLEX_NS_UTIL::DRESULT Focus();
-	};
-
-	class WindowManager
-	{
-	public:
-		WindowManager();
-
-		~WindowManager();
-
+		// vulkanSupport must be true if this window will be passed to VulkanRenderer::Init -
+		// SDL_CreateWindow outright fails if asked for Vulkan support on a video driver/platform
+		// that doesn't have it (verified: SDL's headless "dummy" driver is one such case), so
+		// this isn't requested unless it's actually needed.
+		bool Init(const char* title, ui32 width, ui32 height, bool vulkanSupport = false);
 		void Shutdown();
 
-		DUPLEX_NS_UTIL::DRESULT AddWindow(const WindowCreateInfo* pWindowCreateInfo, Window** window);
+		void Show();
+		void Hide();
+		void Maximize();
+		void Minimize();
 
-		void PollForEvents();
+		void SetTitle(const char* title);
 
-		Display* GetMonitorByHandle(std::string const& displayName);
-		Window* GetWindowByHandle(HWND windowHandle);
-	private:
-		std::vector<Window*> windows;
-		std::vector<Display*> displays;
-		DUPLEX_NS_MATH::Vec2 mousePosition;
+		bool GetClientSize(ui32& width, ui32& height) const;
+		bool IsFocused() const;
 
-		void InitializeWindow(Window* window);
-		void ShutdownWindow(Window* window);
-		void GetScreenInfo();
+		// Pumps the SDL event queue. Handles resize internally (see renderer above). Returns
+		// false once the window should close (SDL_QUIT, or the window's close button).
+		bool PollEvents();
 
-		void CheckWindowScreen(Window* window);
-		void ResetDisplays();
+		void SetRenderer(DUPLEX_NS_GRAPHICS::Renderer* renderer);
 
-#if defined(_WINDOWS)
-		MSG winMessage = {};
-
-		static LRESULT CALLBACK WindowProcedure(HWND windowHandle, unsigned int winMessage, WPARAM wordParam, LPARAM longParam);
-		
-		static BOOL CALLBACK MonitorEnumProcedure(HMONITOR monitorHandle, HDC monitorDeviceContextHandle, LPRECT monitorSize, LPARAM userData);
-		
-#elif defined(_LINUX)
-
-#endif
+		// For backends that need the real SDL handle: Vulkan needs this for
+		// SDL_Vulkan_CreateSurface, D3D11 needs it for SDL_GetWindowWMInfo. See Renderer::Init.
+		SDL_Window* GetSDLWindow() const;
 	};
 }

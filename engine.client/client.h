@@ -3,7 +3,7 @@
 // EXTERNAL INCLUDES
 #include <memory>
 // INTERNAL INCLUDES
-#include "appwindow.h"
+#include "window.h"
 #include "renderer.h"
 #include "ecs/coordinator.h"
 #include "ecs/systems/camerasystem.h"
@@ -14,7 +14,7 @@ namespace Game::Client
 	class Application
 	{
 	private:
-		Engine::Core::AppWindow window;
+		DUPLEX_NS_WINDOW::Window window;
 		enum class AppState
 		{
 			Started,
@@ -22,8 +22,8 @@ namespace Game::Client
 			Stopped
 		} appState = AppState::Started;
 
-		// Owns the backend; AppWindow gets a non-owning pointer (see SetRenderer) so its
-		// WM_SIZE/fullscreen handling can reach it without a global.
+		// Owns the backend; Window gets a non-owning pointer (see SetRenderer) so its resize
+		// handling in PollEvents() can reach it without a global.
 		std::unique_ptr<DUPLEX_NS_GRAPHICS::Renderer> renderer;
 
 		Engine::ECS::Coordinator coordinator;

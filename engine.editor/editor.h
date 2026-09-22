@@ -15,10 +15,9 @@ namespace DUPLEX_NS_EDITOR
 	private:
 		DUPLEX_NS_CONFIG::EngineConfig config;
 		bool isInit = false;
-		DUPLEX_NS_WINDOW::WindowManager windowManager;
+		DUPLEX_NS_WINDOW::Window window;
 		bool InitEditor(std::string file);
 		bool InitProjectExplorer();
-		DUPLEX_NS_WINDOW::Window* window = nullptr;
 	public:
 		bool Init(std::string file);
 		void Run();

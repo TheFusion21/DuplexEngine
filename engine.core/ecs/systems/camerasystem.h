@@ -1,19 +1,17 @@
-#include "system.h"
+#pragma once
+#include <entt/entt.hpp>
 #include "../components/transform.h"
 #include "../components/camera.h"
-#include "../coordinator.h"
 #include "renderer.h"
 namespace Engine::ECS
 {
-	class CameraSystem : public System
+	class CameraSystem
 	{
 	public:
-		void Update(Coordinator& coord, DUPLEX_NS_GRAPHICS::Renderer& renderer)
+		static void Update(entt::registry& registry, DUPLEX_NS_GRAPHICS::Renderer& renderer)
 		{
-			for (auto const& entity : entities)
+			for (auto&& [entity, transform, camera] : registry.view<Transform, Camera>().each())
 			{
-				auto& transform = coord.GetComponent<Transform>(entity);
-				auto& camera = coord.GetComponent<Camera>(entity);
 				// FromView(pos) in the old math library ignored rotation entirely (its "axes"
 				// were always the fixed world basis) - it was just Translate(-pos). Preserved
 				// exactly as glm::translate(mat4(1), -pos) rather than carried forward as a
@@ -25,10 +23,6 @@ namespace Engine::ECS
 				renderer.SetActiveCamera(transform.position, perspective * orientation * view);
 				//transform.position += DUPLEX_NS_MATH::Vec3UnitX * Engine::Utils::Time::deltaTime;
 			}
-		}
-		static ui32 GetTypeID()
-		{
-			return 0;
 		}
 	};
 }

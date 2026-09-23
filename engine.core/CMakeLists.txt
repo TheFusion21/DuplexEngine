@@ -20,24 +20,13 @@ target_sources(
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.h"
 
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/component.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/transform.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/camera.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/meshrenderer.h"
 
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/componentarray.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/componentmanager.h"
-
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/entities/entity.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/entities/entitymanager.h"
-
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/system.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/systemmanager.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/camerasystem.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/meshsystem.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecs/systems/lightsystem.h"
-
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/coordinator.h"
 
 
     PRIVATE
@@ -48,8 +37,6 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/cubemap.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/graphics/light.cpp"
-
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecs/components/component.cpp"
 )
 
 # set additional target properties
@@ -61,6 +48,7 @@ target_link_libraries(${TARGET_NAME}
 )
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.vulkan"
+	"${CMAKE_SOURCE_DIR}/engine.entt/single_include"
 )
 
 # D3D11/D3D12 are Windows-only backends; engine.core stays buildable on other

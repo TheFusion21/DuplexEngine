@@ -10,10 +10,5 @@ namespace Engine::ECS
 		DUPLEX_NS_MATH::Vec3 position = DUPLEX_NS_MATH::Vec3Zero;
 		DUPLEX_NS_MATH::Quaternion rotation = DUPLEX_NS_MATH::QuatIdentity;
 		DUPLEX_NS_MATH::Vec3 scale = DUPLEX_NS_MATH::Vec3UnitScale;
-
-		static ui32 GetTypeID()
-		{
-			return 0;
-		}
 	};
 }

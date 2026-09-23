@@ -1,21 +1,18 @@
-#include "system.h"
+#pragma once
+#include <entt/entt.hpp>
 #include "../components/transform.h"
 #include "../../graphics/light.h"
-#include "../coordinator.h"
 #include "renderer.h"
 namespace Engine::ECS
 {
-	class LightSystem : public System
+	class LightSystem
 	{
 	public:
-		void Update(Coordinator& coord, DUPLEX_NS_GRAPHICS::Renderer& renderer)
+		static void Update(entt::registry& registry, DUPLEX_NS_GRAPHICS::Renderer& renderer)
 		{
 			renderer.ClearLights();
-			for (auto const& entity : entities)
+			for (auto&& [entity, transform, light] : registry.view<Transform, DUPLEX_NS_GRAPHICS::Light>().each())
 			{
-				auto& transform = coord.GetComponent<Transform>(entity);
-				auto& light = coord.GetComponent<DUPLEX_NS_GRAPHICS::Light>(entity);
-
 				DUPLEX_NS_UTIL::GpuLight gpuLight;
 				gpuLight.type = static_cast<ui32>(light.type);
 				gpuLight.color = { light.color.r, light.color.g, light.color.b };
@@ -33,10 +30,6 @@ namespace Engine::ECS
 				gpuLight.position = transform.position;
 				renderer.SetLight(gpuLight);
 			}
-		}
-		static ui32 GetTypeID()
-		{
-			return 2;
 		}
 	};
 }

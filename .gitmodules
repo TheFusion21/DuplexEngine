@@ -10,3 +10,6 @@
 [submodule "engine.glm"]
 	path = engine.glm
 	url = https://github.com/g-truc/glm.git
+[submodule "engine.entt"]
+	path = engine.entt
+	url = https://github.com/skypjack/entt.git

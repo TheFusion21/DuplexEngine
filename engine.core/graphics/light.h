@@ -26,9 +26,5 @@ namespace DUPLEX_NS_GRAPHICS
 
 		float radius = 0.025f;
 		float range = 10;
-		static ui32 GetTypeID()
-		{
-			return 3;
-		}
 	};
 }

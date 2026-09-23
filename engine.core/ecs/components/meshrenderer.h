@@ -1,7 +1,6 @@
 #pragma once
 // EXTERNAL INCLUDES
 // INTERNAL INCLUDES
-#include "component.h"
 #include "math/types.h"
 #include "mesh.h"
 #include "graphics/stb_image.h"
@@ -44,10 +43,6 @@ namespace Engine::ECS
 				indexBuffers.push_back(ib);
 				indexCounts.push_back(static_cast<ui32>(sm.indices.size()));
 			}
-		}
-		static ui32 GetTypeID()
-		{
-			return 2;
 		}
 		std::vector< DUPLEX_NS_GRAPHICS::BsdfMaterial> materials;
 		Engine::Resources::Mesh mesh;

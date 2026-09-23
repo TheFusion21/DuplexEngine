@@ -16,10 +16,6 @@ namespace Engine::ECS
 			this->nearPlane = nearPlane;
 			this->farPlane = farPlane;
 		}
-		static ui32 GetTypeID()
-		{
-			return 1;
-		}
 	private:
 		real h_fov = static_cast<real>(75.0);
 		real nearPlane = static_cast<real>(0.0001);

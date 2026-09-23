@@ -29,6 +29,7 @@ target_link_libraries(${TARGET_NAME}
     engine.core
     engine.window
     engine.config
+    engine.imgui
 )
 
 # additional includes for target

@@ -116,10 +116,14 @@ namespace DUPLEX_NS_GRAPHICS
 		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
 		void ReleaseBuffer(BufferHandle& buffer);
 
+		bool InitImGui(SDL_Window* window);
+		void ImGuiNewFrame(SDL_Window* window);
+		void ImGuiRenderDrawData();
 
 		//void AddDirectionalLight(Engine::Components::DirectionalLight& dirLight);
 		//void AddPointLight(Engine::Components::PointLight& pointLight);
 	private:
+		bool imguiInitialized = false;
 		DXGI_FORMAT FromTextureFormat(TextureFormat format);
 	};
 }

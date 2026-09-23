@@ -28,6 +28,7 @@ target_link_libraries(${TARGET_NAME}
     dxgi.lib
     d3dcompiler.lib
     SDL2::SDL2
+    engine.imgui
 )
 target_include_directories(${TARGET_NAME} PUBLIC
 	"${CMAKE_SOURCE_DIR}/driver.graphics"

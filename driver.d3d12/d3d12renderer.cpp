@@ -96,3 +96,16 @@ void D3D12Renderer::ReleaseTextureSRV(ShaderResourceViewHandle& srv)
 void D3D12Renderer::ReleaseBuffer(BufferHandle& buffer)
 {
 }
+
+bool D3D12Renderer::InitImGui(SDL_Window* window)
+{
+	return false;
+}
+
+void D3D12Renderer::ImGuiNewFrame(SDL_Window* window)
+{
+}
+
+void D3D12Renderer::ImGuiRenderDrawData()
+{
+}

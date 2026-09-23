@@ -23,6 +23,7 @@ target_link_libraries(${TARGET_NAME}
     driver.graphics
     Vulkan::Vulkan
     SDL2::SDL2
+    engine.imgui
 )
 
 target_include_directories(${TARGET_NAME} PUBLIC

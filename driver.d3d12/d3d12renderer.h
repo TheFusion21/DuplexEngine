@@ -67,5 +67,11 @@ namespace DUPLEX_NS_GRAPHICS
 		void ReleaseTexture(TextureHandle& texture) override;
 		void ReleaseTextureSRV(ShaderResourceViewHandle& srv) override;
 		void ReleaseBuffer(BufferHandle& buffer) override;
+
+		// Stubbed like the rest of this scaffold - there's no device/swapchain for Dear ImGui
+		// to attach to yet.
+		bool InitImGui(SDL_Window* window) override;
+		void ImGuiNewFrame(SDL_Window* window) override;
+		void ImGuiRenderDrawData() override;
 	};
 }

@@ -46,3 +46,6 @@ bin/
 
 # Runtime config written by engine.editor next to wherever it's run from
 /EngineConfig.ini
+
+# Dear ImGui's own window-layout state, written next to wherever it's run from
+/imgui.ini

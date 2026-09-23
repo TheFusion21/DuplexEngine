@@ -1,10 +1,12 @@
 #pragma once
 // EXTERNAL INCLUDES
+#include <functional>
 // INTERNAL INCLUDES
 #include "math/types.h"
 #include "namespaces.h"
 
 struct SDL_Window;
+union SDL_Event;
 
 namespace DUPLEX_NS_GRAPHICS
 {
@@ -45,7 +47,10 @@ namespace DUPLEX_NS_WINDOW
 
 		// Pumps the SDL event queue. Handles resize internally (see renderer above). Returns
 		// false once the window should close (SDL_QUIT, or the window's close button).
-		bool PollEvents();
+		// onEvent, if given, is invoked with every raw event as it's pumped (before this
+		// class's own handling) - e.g. so engine.editor can forward each one to
+		// ImGui_ImplSDL2_ProcessEvent without this class needing to know ImGui exists.
+		bool PollEvents(const std::function<void(const SDL_Event&)>& onEvent = nullptr);
 
 		void SetRenderer(DUPLEX_NS_GRAPHICS::Renderer* renderer);
 

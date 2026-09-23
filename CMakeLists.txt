@@ -17,6 +17,9 @@ add_subdirectory ("engine.spirv")
 
 # Cross-platform subprojects: buildable and tested on both Windows and Linux.
 add_subdirectory ("driver.graphics")
+# Needs to come before driver.vulkan (and, on Windows, driver.d3d below) - both link against it
+# for their Renderer::InitImGui/etc implementations. See engine.imgui/CMakeLists.txt.
+add_subdirectory ("engine.imgui")
 add_subdirectory ("driver.vulkan")
 add_subdirectory ("engine.shared")
 add_subdirectory ("engine.core")

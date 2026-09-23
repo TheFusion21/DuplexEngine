@@ -81,11 +81,14 @@ bool Window::IsFocused() const
 	return hasFocus;
 }
 
-bool Window::PollEvents()
+bool Window::PollEvents(const std::function<void(const SDL_Event&)>& onEvent)
 {
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
+		if (onEvent)
+			onEvent(event);
+
 		if (event.type == SDL_QUIT)
 		{
 			return false;

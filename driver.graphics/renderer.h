@@ -69,6 +69,20 @@ namespace DUPLEX_NS_GRAPHICS
 		virtual void ReleaseTextureSRV(ShaderResourceViewHandle& srv) = 0;
 		virtual void ReleaseBuffer(BufferHandle& buffer) = 0;
 
+		// Dear ImGui integration (see engine.editor). Each backend wires up both the SDL2
+		// platform backend and its own renderer backend (imgui_impl_vulkan / imgui_impl_dx11)
+		// internally, so callers never touch native device/context handles directly - same
+		// encapsulation as the rest of this interface. ImGui::CreateContext()/DestroyContext()
+		// are the caller's responsibility (they're backend-agnostic, library-global state);
+		// backend shutdown happens inside each Shutdown() override, guarded by whether
+		// InitImGui was ever called, so callers that never use ImGui (e.g. Game::Client)
+		// don't pay for or risk tearing down state that was never created.
+		virtual bool InitImGui(SDL_Window* window) = 0;
+		// Must be called between BeginScene() and EndScene() - it records ImGui's draw
+		// commands into the same in-flight command buffer/render target BeginScene() opened.
+		virtual void ImGuiNewFrame(SDL_Window* window) = 0;
+		virtual void ImGuiRenderDrawData() = 0;
+
 	protected:
 		ui32 PixelSizeFromTextureFormat(TextureFormat format);
 	};

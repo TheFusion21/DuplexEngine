@@ -88,6 +88,13 @@ namespace DUPLEX_NS_GRAPHICS
 		// of that frame's BeginScene() once its previous fence has signalled.
 		std::vector<VkDescriptorPool> descriptorPools; // FRAME_LAG
 
+		// Dear ImGui's Vulkan backend needs its own descriptor pool (a combined-image-sampler
+		// layout for its font atlas, incompatible with this renderer's own separate
+		// sampled-image/sampler descriptor layout - see CreateDescriptorSetLayout). Only
+		// created if InitImGui() is actually called (see Renderer::InitImGui).
+		bool imguiInitialized = false;
+		VkDescriptorPool imguiDescriptorPool = nullptr;
+
 		ui32 currentFrame = 0;
 		ui32 currentImageIndex = 0;
 		ui32 drawIndexThisFrame = 0;
@@ -167,6 +174,10 @@ namespace DUPLEX_NS_GRAPHICS
 		void ReleaseTexture(TextureHandle& texture);
 		void ReleaseTextureSRV(ShaderResourceViewHandle& srv);
 		void ReleaseBuffer(BufferHandle& buffer);
+
+		bool InitImGui(SDL_Window* window);
+		void ImGuiNewFrame(SDL_Window* window);
+		void ImGuiRenderDrawData();
 	private:
 		struct VulkanSwapchainSupportDetails {
 			VkSurfaceCapabilitiesKHR capabilities;

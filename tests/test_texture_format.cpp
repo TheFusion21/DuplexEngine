@@ -35,6 +35,9 @@ namespace
 		void ReleaseTexture(TextureHandle&) override {}
 		void ReleaseTextureSRV(ShaderResourceViewHandle&) override {}
 		void ReleaseBuffer(BufferHandle&) override {}
+		bool InitImGui(SDL_Window*) override { return false; }
+		void ImGuiNewFrame(SDL_Window*) override {}
+		void ImGuiRenderDrawData() override {}
 
 		ui32 PublicPixelSize(TextureFormat format) { return PixelSizeFromTextureFormat(format); }
 	};

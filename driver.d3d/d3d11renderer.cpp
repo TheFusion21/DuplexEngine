@@ -18,6 +18,9 @@
 #include "spirv_parser.hpp"
 #include "spirv_hlsl.hpp"
 #include "spirv_reflect.hpp"
+#include <imgui.h>
+#include <imgui_impl_sdl.h>
+#include <imgui_impl_dx11.h>
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_GRAPHICS;
@@ -562,6 +565,10 @@ void D3D11Renderer::BeginScene()
 {
 	context->ClearRenderTargetView(rtv, clearColor);
 	context->ClearDepthStencilView(depthView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	// Also (redundantly) bound in Render() before each draw - kept there unchanged, but ImGui
+	// needs this bound even when nothing calls Render() at all (see engine.editor, which draws
+	// no meshes), so it can't rely on that happening implicitly.
+	context->OMSetRenderTargets(1, &rtv, depthView);
 
 	worldLocalBuffer.lightCount = static_cast<ui32>(lights.size());
 	int i = 0;
@@ -635,10 +642,17 @@ void D3D11Renderer::EndScene()
 
 void D3D11Renderer::Shutdown()
 {
+	if (imguiInitialized)
+	{
+		ImGui_ImplDX11_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		imguiInitialized = false;
+	}
+
 	//exit fullscreen mode if we are in it
 	if (swapChain)
 		swapChain->SetFullscreenState(false, nullptr);
-	
+
 #ifdef ENGINE_COMPILE_DEBUG
 	if (FAILED(this->debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL)))
 	{
@@ -964,4 +978,27 @@ DXGI_FORMAT D3D11Renderer::FromTextureFormat(TextureFormat format)
 		return DXGI_FORMAT::DXGI_FORMAT_R16G16_UNORM;
 	}
 	return DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
+}
+
+bool D3D11Renderer::InitImGui(SDL_Window* window)
+{
+	if (!ImGui_ImplSDL2_InitForD3D(window))
+		return false;
+	if (!ImGui_ImplDX11_Init(device, context))
+		return false;
+	imguiInitialized = true;
+	return true;
+}
+
+void D3D11Renderer::ImGuiNewFrame(SDL_Window* window)
+{
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplSDL2_NewFrame(window);
+	ImGui::NewFrame();
+}
+
+void D3D11Renderer::ImGuiRenderDrawData()
+{
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }

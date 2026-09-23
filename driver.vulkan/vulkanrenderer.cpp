@@ -9,6 +9,9 @@
 #include <cstdio>
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include <imgui.h>
+#include <imgui_impl_sdl.h>
+#include <imgui_impl_vulkan.h>
 
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
@@ -1484,6 +1487,14 @@ void VulkanRenderer::Shutdown()
         vkDeviceWaitIdle(this->device);
     }
 
+    if (imguiInitialized)
+    {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        vkDestroyDescriptorPool(this->device, imguiDescriptorPool, nullptr);
+        imguiInitialized = false;
+    }
+
     ReleaseTexture(defaultTextureHandle);
     ReleaseTextureSRV(defaultTextureView);
 
@@ -1579,4 +1590,72 @@ void VulkanRenderer::Shutdown()
     {
         vkDestroyInstance(this->instance, nullptr);
     }
+}
+
+static void ImGuiVulkanCheckResult(VkResult err)
+{
+    ASSERT_MSG(err == VK_SUCCESS, "Dear ImGui Vulkan backend error");
+}
+
+bool VulkanRenderer::InitImGui(SDL_Window* window)
+{
+    // Dear ImGui's Vulkan backend only ever binds one combined-image-sampler descriptor (its
+    // font atlas - this old backend doesn't support arbitrary user textures, see
+    // imgui_impl_vulkan.h's "Missing features" note), so this pool only ever needs to satisfy
+    // that one allocation. Separate from descriptorPools above, which use this renderer's own
+    // (incompatible) split sampled-image/sampler layout.
+    VkDescriptorPoolSize poolSize = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 };
+    VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &poolSize;
+    VK_CHECK(vkCreateDescriptorPool(this->device, &poolInfo, nullptr, &imguiDescriptorPool));
+
+    if (!ImGui_ImplSDL2_InitForVulkan(window))
+        return false;
+
+    ImGui_ImplVulkan_InitInfo initInfo = {};
+    initInfo.Instance = this->instance;
+    initInfo.PhysicalDevice = this->physicalDevice;
+    initInfo.Device = this->device;
+    initInfo.QueueFamily = static_cast<ui32>(this->graphicsFamilyQueueIndex);
+    initInfo.Queue = this->graphicsQueue;
+    initInfo.PipelineCache = VK_NULL_HANDLE;
+    initInfo.DescriptorPool = imguiDescriptorPool;
+    initInfo.MinImageCount = static_cast<ui32>(swapchainImages.size());
+    initInfo.ImageCount = static_cast<ui32>(swapchainImages.size());
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    initInfo.Allocator = nullptr;
+    initInfo.CheckVkResultFn = ImGuiVulkanCheckResult;
+    if (!ImGui_ImplVulkan_Init(&initInfo, this->renderPass))
+        return false;
+
+    VkCommandBuffer cmd = BeginSingleTimeCommands();
+    ImGui_ImplVulkan_CreateFontsTexture(cmd);
+    EndSingleTimeCommands(cmd);
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    imguiInitialized = true;
+    return true;
+}
+
+void VulkanRenderer::ImGuiNewFrame(SDL_Window* window)
+{
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
+    ImGui::NewFrame();
+}
+
+void VulkanRenderer::ImGuiRenderDrawData()
+{
+    // ImGui::Render() always has to run to balance the ImGui::NewFrame() in ImGuiNewFrame() -
+    // skipping it would corrupt ImGui's internal frame-state assertions on the next frame.
+    // The actual GPU draw-command recording is skipped when the frame itself was skipped (see
+    // BeginScene()'s VK_ERROR_OUT_OF_DATE_KHR path) - commandBuffers[currentFrame] was never
+    // put into the recording state in that case.
+    ImGui::Render();
+    if (!frameActive)
+        return;
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame]);
 }

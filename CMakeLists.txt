@@ -15,6 +15,35 @@ set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
 add_subdirectory ("engine.spirv")
 
+# Phase 9: cross-platform-deterministic physics (see engine.jolt's own README for what this
+# flag guarantees, and project memory for the research behind choosing it). Jolt's
+# Build/CMakeLists.txt auto-disables its UnitTests/Samples/JoltViewer/HelloWorld/
+# PerformanceTest targets whenever it's add_subdirectory'd from a parent project (it checks
+# CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR), so only the Jolt library itself gets
+# built here - no extra options needed for that part.
+# USE_AVX/USE_AVX2 forced OFF (Jolt defaults both ON): this project's own SIMD story (see
+# engine.shared/simd/) deliberately keeps the whole binary on an SSE2-safe baseline and only
+# ever emits AVX2 in one runtime-dispatched translation unit - letting Jolt bake AVX2 into
+# every translation unit it compiles would silently make the entire game binary crash with
+# an illegal instruction on any CPU without AVX2, contradicting that. CROSS_PLATFORM_
+# DETERMINISTIC is orthogonal to this (it's about getting the same numeric RESULT across
+# platforms once running, not about which instructions the binary is allowed to contain), so
+# both are compatible with each other and set independently.
+set(CROSS_PLATFORM_DETERMINISTIC ON CACHE BOOL "" FORCE)
+set(USE_AVX OFF CACHE BOOL "" FORCE)
+set(USE_AVX2 OFF CACHE BOOL "" FORCE)
+set(USE_AVX512 OFF CACHE BOOL "" FORCE)
+# Jolt defaults INTERPROCEDURAL_OPTIMIZATION (LTO) ON, and its own CMakeLists.txt comments warn
+# this can produce an "error adding symbols: file format not recognized" link error unless the
+# consuming project also enables LTO for its own targets. GCC/ld on this dev box linked the
+# resulting libJolt.a into the final executables without issue either way, but that's only
+# verified for this one toolchain - MSVC's /LTCG has different mixed-LTO/non-LTO quirks this
+# can't be verified against here (no Windows toolchain available). Disabling it costs
+# essentially nothing (LTO mainly helps cross-translation-unit inlining, not correctness) and
+# removes a whole category of risk on the untested platform.
+set(INTERPROCEDURAL_OPTIMIZATION OFF CACHE BOOL "" FORCE)
+add_subdirectory ("engine.jolt/Build")
+
 # Cross-platform subprojects: buildable and tested on both Windows and Linux.
 add_subdirectory ("driver.graphics")
 # Needs to come before driver.vulkan (and, on Windows, driver.d3d below) - both link against it

@@ -16,6 +16,7 @@ using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_RESOURCES;
+using namespace DUPLEX_NS_PHYSICS;
 using namespace Engine::ECS;
 
 void Application::Init()
@@ -76,6 +77,43 @@ void Application::Init()
 	registry.emplace<Light>(dirLight);
 	Transform lightTransform;
 	registry.emplace<Transform>(dirLight, lightTransform);
+
+	// Phase 9 demo: a small stack of boxes dropped onto a static floor, off to the side of the
+	// BoomBox so the two demos don't overlap. Proves the physics pipeline is actually driving
+	// rendering, not just linked in - PhysicsSystem::Update (see Run()) copies each RigidBody
+	// entity's simulated position/rotation into its Transform every fixed step, and MeshSystem
+	// renders from that Transform exactly like it does for any other entity.
+	physicsWorld.Init();
+
+	const Vec3 physicsDemoOrigin = Vec3(3.0f, -1.5f, 0.0f);
+	const Vec3 floorHalfExtents = Vec3(2.5f, 0.1f, 2.5f);
+	entt::entity floor = registry.create();
+	Transform floorTransform;
+	floorTransform.position = physicsDemoOrigin;
+	floorTransform.scale = floorHalfExtents * static_cast<real>(2.0); // GenerateFlatCube() is a unit cube: scale = 2*halfExtents to match the physics shape.
+	registry.emplace<Transform>(floor, floorTransform);
+	registry.emplace<MeshRenderer>(floor).SetMesh(*renderer, Mesh::GenerateFlatCube());
+	registry.emplace<RigidBody>(floor, RigidBody{ physicsWorld.CreateBoxBody(floorHalfExtents, physicsDemoOrigin, QuatIdentity, BodyMotionType::Static) });
+
+	const Vec3 boxHalfExtents = Vec3UnitScale * static_cast<real>(0.5);
+	for (int i = 0; i < 5; i++)
+	{
+		Vec3 startPos = physicsDemoOrigin + Vec3(
+			static_cast<real>((i % 3) - 1) * static_cast<real>(0.6),
+			static_cast<real>(2.0) + static_cast<real>(i) * static_cast<real>(1.2),
+			static_cast<real>((i / 3)) * static_cast<real>(0.3));
+		Quaternion startRot = glm::angleAxis(glm::radians(static_cast<real>(15 * i)), Vec3UnitX);
+
+		entt::entity box = registry.create();
+		Transform boxTransform;
+		boxTransform.position = startPos;
+		boxTransform.rotation = startRot;
+		boxTransform.scale = boxHalfExtents * static_cast<real>(2.0);
+		registry.emplace<Transform>(box, boxTransform);
+		registry.emplace<MeshRenderer>(box).SetMesh(*renderer, Mesh::GenerateFlatCube());
+		registry.emplace<RigidBody>(box, RigidBody{ physicsWorld.CreateBoxBody(boxHalfExtents, startPos, startRot, BodyMotionType::Dynamic) });
+	}
+
 	Time::Start();
 	this->appState = AppState::Running;
 }
@@ -84,6 +122,7 @@ void Application::Run()
 {
 	while(this->appState == AppState::Running)
 	{
+		PhysicsSystem::Update(registry, physicsWorld, static_cast<float>(Time::deltaTime));
 		CameraSystem::Update(registry, *renderer);
 		LightSystem::Update(registry, *renderer);
 
@@ -107,6 +146,8 @@ void Application::Run()
 
 void Application::Shutdown()
 {
+	physicsWorld.Shutdown();
+
 	// renderer can still be null here: main() always calls Shutdown() after Init(), even if
 	// Init() bailed out before constructing it (e.g. window.Init() failing).
 	if (renderer)

@@ -13,3 +13,6 @@
 [submodule "engine.entt"]
 	path = engine.entt
 	url = https://github.com/skypjack/entt.git
+[submodule "engine.jolt"]
+	path = engine.jolt
+	url = https://github.com/jrouwe/JoltPhysics.git

@@ -9,6 +9,8 @@
 #include "ecs/systems/camerasystem.h"
 #include "ecs/systems/meshsystem.h"
 #include "ecs/systems/lightsystem.h"
+#include "ecs/systems/physicssystem.h"
+#include "physics/physicsworld.h"
 namespace Game::Client
 {
 	class Application
@@ -29,6 +31,11 @@ namespace Game::Client
 		entt::registry registry;
 		entt::entity prop;
 		entt::entity dirLight;
+
+		// Phase 9: a small falling-boxes demo proving the physics pipeline is real, not just
+		// linked in. See PhysicsSystem::Update for how RigidBody entities' Transforms get
+		// synced from this each frame.
+		DUPLEX_NS_PHYSICS::PhysicsWorld physicsWorld;
 
 	public:
 		void Init();

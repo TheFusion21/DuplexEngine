@@ -21,3 +21,7 @@ add_test(NAME simd_transformbatch COMMAND test_simd_transformbatch)
 add_executable(test_fixed_smoke test_fixed_smoke.cpp)
 target_link_libraries(test_fixed_smoke PRIVATE engine.shared)
 add_test(NAME fixed_smoke COMMAND test_fixed_smoke)
+
+add_executable(test_physics_determinism test_physics_determinism.cpp)
+target_link_libraries(test_physics_determinism PRIVATE Jolt)
+add_test(NAME physics_determinism COMMAND test_physics_determinism)

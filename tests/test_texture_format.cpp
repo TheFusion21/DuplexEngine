@@ -31,7 +31,6 @@ namespace
 		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle, TextureFormat) override { return ShaderResourceViewHandle{}; }
 		BufferHandle CreateBuffer(BufferType, const void*, int, UsageType = UsageType::Default) override { return BufferHandle{}; }
 		bool Resize(ui32, ui32) override { return true; }
-		bool CheckForFullscreen() override { return false; }
 		void ReleaseTexture(TextureHandle&) override {}
 		void ReleaseTextureSRV(ShaderResourceViewHandle&) override {}
 		void ReleaseBuffer(BufferHandle&) override {}

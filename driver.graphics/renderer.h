@@ -14,7 +14,6 @@ namespace DUPLEX_NS_GRAPHICS
 	class Renderer
 	{
 	protected:
-		BOOL isFullscreen = false;
 		BOOL vsyncEnable = true;
 		BOOL wireFrame = false;
 		Renderer() { }
@@ -63,8 +62,6 @@ namespace DUPLEX_NS_GRAPHICS
 
 		virtual bool Resize(ui32 width, ui32 height) = 0;
 
-		virtual bool CheckForFullscreen() = 0;
-
 		virtual void ReleaseTexture(TextureHandle& texture) = 0;
 		virtual void ReleaseTextureSRV(ShaderResourceViewHandle& srv) = 0;
 		virtual void ReleaseBuffer(BufferHandle& buffer) = 0;
@@ -93,6 +90,11 @@ namespace DUPLEX_NS_GRAPHICS
 		ui32 GetWidth() const { return width; }
 		ui32 GetHeight() const { return height; }
 
+		// No Fullscreen()/CheckForFullscreen() here - that used to be dead DXGI-only plumbing
+		// (isFullscreen/CheckForFullscreen(), never actually called anywhere, and no equivalent
+		// existed for Vulkan at all). Fullscreen switching now lives entirely at the window
+		// layer instead - see DUPLEX_NS_WINDOW::Window::SetFullscreenMode - since SDL's resize
+		// event already drives Resize() below identically on every backend either way.
 	protected:
 		ui32 PixelSizeFromTextureFormat(TextureFormat format);
 	};

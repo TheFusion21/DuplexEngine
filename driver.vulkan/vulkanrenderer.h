@@ -182,7 +182,6 @@ namespace DUPLEX_NS_GRAPHICS
 		void Shutdown();
 		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default);
 		bool Resize(ui32 width, ui32 height);
-		bool CheckForFullscreen();
 
 		ShaderResourceViewHandle CreateCubemapSRV(TextureHandle cubemap, TextureFormat format);
 

@@ -22,9 +22,11 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #include <imgui_impl_dx11.h>
+#include "log.h"
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_LOG;
 
 namespace
 {
@@ -155,8 +157,8 @@ bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 	{
 		char adapterDescText[128];
 		wcstombs(adapterDescText, adapterDesc.Description, 128);
-		printf("Graphics Device: %s\n", adapterDescText);
-		printf("Graphics available Memory: %d MB\n", static_cast<ui32>(adapterDesc.DedicatedVideoMemory * 9.5367E-7f));
+		Logger::Renderer().info("Graphics Device: {}", adapterDescText);
+		Logger::Renderer().info("Graphics available Memory: {} MB", static_cast<ui32>(adapterDesc.DedicatedVideoMemory * 9.5367E-7f));
 	}
 	factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 	//Release and delete stuff we don't need anymore in next code section
@@ -297,7 +299,7 @@ bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 #ifdef ENGINE_COMPILE_DEBUG
 	if (FAILED(device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debug))))
 	{
-		printf("Failed to query for debug interface.\n");
+		Logger::Renderer().warn("Failed to query for debug interface.");
 		return false;
 	}
 #endif
@@ -320,6 +322,7 @@ bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 		return false;
 	}
 
+	Logger::Renderer().info("D3D11Renderer initialized ({}x{})", width, height);
 	return true;
 }
 
@@ -691,6 +694,8 @@ void D3D11Renderer::EndScene()
 
 void D3D11Renderer::Shutdown()
 {
+	Logger::Renderer().info("D3D11Renderer shutting down");
+
 	if (imguiInitialized)
 	{
 		ImGui_ImplDX11_Shutdown();
@@ -705,7 +710,7 @@ void D3D11Renderer::Shutdown()
 #ifdef ENGINE_COMPILE_DEBUG
 	if (FAILED(this->debug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL)))
 	{
-		printf("Failed to activate report of pending graphics objects.\n");
+		Logger::Renderer().warn("Failed to activate report of pending graphics objects.");
 	}
 
 	SAFERELEASE(this->debug);
@@ -839,18 +844,6 @@ void D3D11Renderer::SetLight(GpuLight lightDescriptor)
 {
 	lightDescriptor.transform = ToShaderLayout(lightDescriptor.transform);
 	lights.push_back(lightDescriptor);
-}
-
-bool D3D11Renderer::CheckForFullscreen()
-{
-	BOOL fullscreen;
-	swapChain->GetFullscreenState(&fullscreen, nullptr);
-	if (fullscreen != inFullscreen)
-	{
-		inFullscreen = fullscreen;
-		return true;
-	}
-	return false;
 }
 
 TextureHandle D3D11Renderer::CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data)

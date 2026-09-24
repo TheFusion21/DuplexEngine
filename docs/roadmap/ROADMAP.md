@@ -124,7 +124,7 @@ check instead of a checkbox exercise after everything else is done.
 
 | # | Phase | New in this pass? |
 |---|---|---|
-| 10 | Logging system | new |
+| 10 | Logging system | done 2026-09-24 |
 | 11 | Base components: hierarchy/parenting/transforming | — |
 | 12 | Serialization: scene format, save games, prefabs | expanded |
 | 13 | Asset/resource management | new |
@@ -274,21 +274,112 @@ Phase 48 (export/bundle)                 — deliberately last
 
 ---
 
-## Phase 10 — Logging system
+## Phase 10 — Logging system (done 2026-09-24)
 
 **Depends on:** nothing. Do this first — every phase after it benefits from having real logs
 instead of ad-hoc `fprintf`/`[DBG]` breadcrumbs (which earlier phases already had to add and
 then manually strip — see Phase 5/9's history of exactly that).
 
-**Scope:** **spdlog** — header-only (in its simplest usage), no dependencies, cross-platform
-(Windows/Linux/macOS), fast enough for a hot path if ever needed (async mode via lock-free
-queues), sane leveled/categorized logging with sinks (console with color, rotating file). Wire
-a category per subsystem (`Renderer`, `Physics`, `Audio`, `ECS`, `Editor`, ...) so log output
-can be filtered per-system once there's enough of it to need filtering. Route it into the Phase
-16 in-editor debug overlay once that exists, as a log panel.
+**Scope:** **spdlog**, vendored as a new `engine.spdlog` submodule (built as a real static lib
+via `add_subdirectory`, not the header-only mode — matches this project's existing pattern of
+compiling its vendored deps rather than pulling in single-header variants, and avoids adding
+spdlog's template-heavy formatting code to every translation unit that logs). Wire a category
+per subsystem (`Core`, `Renderer`, `Physics`, `Audio`, `ECS`, `Editor`, `Window`) so log output
+can be filtered per-system once there's enough of it to need filtering, each sharing the same
+two sinks under the hood (colored console, rotating file at `bin/logs/duplex.log`, 5 MiB × 3).
+Routing it into the Phase 16 in-editor debug overlay as a log panel is still future work — that
+panel doesn't exist yet.
 
-**Where it lives:** new `engine.log` module (or fold into `engine.shared/` given how small this
-is — decide when the phase starts), `Duplex::Log` namespace.
+**Where it lives:** the wrapper (`Logger` class — see naming note below) folded into
+`engine.shared/` (`log.h`/`log.cpp`) rather than a separate module, per the option this section
+originally flagged — small enough not to justify its own `engine.log` directory. `main()` in
+both `engine.client` and `engine.editor` calls `Logger::Init()` first and `Logger::Shutdown()`
+last, so every subsystem in between can log unconditionally.
+
+**Named `Logger`, not `Log`, despite the namespace being `Duplex::Log`:** a class named exactly
+the same as its immediately-enclosing namespace makes every qualified static call (`Log::
+Renderer()`) genuinely ambiguous under MSVC — confirmed directly, not just suspected: this shape
+was tried first and failed to compile (`'Renderer': is not a member of 'Duplex::Log'`, pointing
+at the namespace, not the class it shadows). `DUPLEX_NS_WINDOW::Window` has the identical
+namespace/class name collision and compiles fine today only because every `Window` member is
+called through an instance (`window.Init(...)`), never as `Window::Foo()` — `Logger`'s whole
+interface is static accessors, which is exactly the shape that exposes the collision. Worth
+recording so a future phase doesn't reintroduce it for some other `Duplex::X` / `class X` pair.
+
+**Wired in, not just built:** rather than leave the infrastructure unused until a later phase
+needed it, this pass converted the existing ad-hoc `printf`/`fprintf` diagnostics already in the
+renderer backends into real categorized logging, since they're exactly the "breadcrumbs added
+then manually stripped" pattern this phase exists to replace — D3D11/D3D12/Vulkan's device-name
+and available-memory startup prints, D3D12's `ID3D12InfoQueue1` debug-layer callback and
+Vulkan's `VkDebugUtilsMessenger` validation callback (both now map their real severity to the
+matching log level instead of a single hardcoded prefix), and the Phase 17 shader-file-not-found
+diagnostics in `VulkanRenderer::CreateShaderModuleFromFile` (D3D11/D3D12 keep `MessageBoxA` for
+those — still the right call for a blocking, must-be-seen dialog — Vulkan's cross-platform
+`fprintf(stderr, ...)` became `Logger::Renderer().error(...)` instead, which still reaches the
+console and now also the log file). `PhysicsWorld::Init`/`Shutdown` and `Application::Init`/
+`Run`/`Shutdown`'s major milestones got the same treatment. Verified by actually running
+`DuplexEngine.debug.exe` and reading both the live console output and the resulting
+`bin/logs/duplex.log` — confirmed identical, correctly categorized, correctly timestamped, and
+fully flushed on a clean shutdown (`Logger::Shutdown()` → `spdlog::shutdown()`).
+
+---
+
+### Same-day addition, not on the original list: exclusive and borderless fullscreen
+
+Kay asked for both fullscreen modes alongside Phase 10. Checked the existing code before adding
+anything: `Renderer` already had `isFullscreen`/`CheckForFullscreen()` and D3D11/D3D12 already
+had DXGI `SetFullscreenState`/`GetFullscreenState` plumbing (`inFullscreen`) — but **none of it
+was ever called from anywhere** (grepped the whole tree; the only hits were the declarations
+themselves, a defensive `SetFullscreenState(FALSE, ...)` in each `Shutdown()`, and a test mock's
+override). Windows was also already opted out of DXGI's own automatic Alt+Enter handling
+(`DXGI_MWA_NO_ALT_ENTER`, set when the swap chain is created). Vulkan had no equivalent at all —
+its own `CheckForFullscreen()` override said so directly in a comment. This dead, D3D-only,
+never-wired scaffolding was removed rather than resurrected.
+
+**Implemented once at the window layer instead, uniformly for all three backends:**
+`DUPLEX_NS_WINDOW::Window::SetFullscreenMode(FullscreenMode::{Windowed,Borderless,Exclusive})`,
+using SDL2's own `SDL_SetWindowFullscreen` (`SDL_WINDOW_FULLSCREEN_DESKTOP` for borderless,
+`SDL_WINDOW_FULLSCREEN` for a real display-mode change for exclusive). Considered driving this
+through each backend's own native API instead (DXGI `SetFullscreenState` for D3D11/D3D12,
+`VK_EXT_full_screen_exclusive` for Vulkan) and deliberately didn't: that extension is Windows-
+only and opt-in, so Vulkan would structurally never get real exclusive fullscreen on Linux,
+meaning D3D11/D3D12 and Vulkan would end up with two different feature sets under the same
+button. SDL's resize event already drives `Renderer::Resize()` identically on every backend
+(this is exactly the plumbing the "resizing does nothing" fix under Phase 17 above made trust-
+worthy), so routing both fullscreen modes through an ordinary SDL resize gets uniform behavior
+on all three backends for free, at the cost of not being D3D's "truest" possible exclusive
+fullscreen. `Window::SetFullscreenMode` calls `Renderer::Resize()` itself immediately (the same
+`GetClientSize` + `Resize` pairing `PollEvents()` already uses for a live drag-resize) rather
+than waiting for the next event pump, so a caller toggling this mid-frame sees the new size take
+effect immediately, not one frame late.
+
+**Bound to F11 (borderless) and Alt+Enter (exclusive)** in `engine.client`'s main loop — the two
+conventional keybinds for each, matching most games — both toggling back to `Windowed` if that
+mode's already active. No settings UI exists yet (Phase 15/16) to pick a mode deliberately or
+choose a specific exclusive-fullscreen resolution, so `Exclusive` uses SDL's default behavior of
+matching the closest available display mode to the window's current size, not a resolution the
+player chose.
+
+**Verification note:** simulating keyboard input into the running window from this session's
+automation (tried `System.Windows.Forms.SendKeys`, raw `SendInput`, and direct `PostMessage` of
+`WM_KEYDOWN`/`WM_KEYUP`) never reached the app's `SDL_GetKeyboardState`, despite confirmed
+foreground focus and despite screenshotting the same window working reliably — an environment/
+automation limitation, not something diagnosed further since it's orthogonal to the feature
+itself. Verified two other ways instead: (1) P/Invoked `SDL_SetWindowFullscreen` directly against
+the actual `bin/SDL2.dll` this project links, outside the engine entirely, confirming the exact
+API call `SetFullscreenMode` makes behaves correctly on this machine — borderless correctly
+resized to the real desktop resolution (5120×1440, this box's ultrawide monitor) with the right
+window flags, exclusive correctly entered a true fullscreen mode, both cleanly reverted; (2) a
+temporary timer-driven auto-cycle through all three modes added to `Application::Run()` (removed
+before finishing this phase), run against the real `DuplexEngine.debug.exe`, confirmed via the
+Phase 10 logging this same pass added — `bin/logs/duplex.log` shows all three transitions firing
+in order with correct resolutions and no crash: `Fullscreen mode changed to Borderless
+(5120x1440)`, then `... to Exclusive (1280x720)`, then `... to Windowed (1280x720)`.
+
+**Where it lives:** `engine.window/window.h`/`.cpp` (`FullscreenMode`, `SetFullscreenMode`,
+`GetFullscreenMode`), `engine.client/client.cpp` (the F11/Alt+Enter bindings), `driver.graphics/
+renderer.h` + all three backends + `tests/test_texture_format.cpp` (removing the dead
+`isFullscreen`/`CheckForFullscreen`/`inFullscreen` plumbing).
 
 ---
 

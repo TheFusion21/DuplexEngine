@@ -16,3 +16,6 @@
 [submodule "engine.jolt"]
 	path = engine.jolt
 	url = https://github.com/jrouwe/JoltPhysics.git
+[submodule "engine.spdlog"]
+	path = engine.spdlog
+	url = https://github.com/gabime/spdlog.git

@@ -1,4 +1,5 @@
 #include "physicsworld.h"
+#include "log.h"
 
 #include <Jolt/Jolt.h>
 #include <Jolt/RegisterTypes.h>
@@ -153,6 +154,9 @@ void PhysicsWorld::Init()
 	impl->physicsSystem.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints,
 		impl->broadPhaseLayerInterface, impl->objectVsBroadPhaseLayerFilter, impl->objectVsObjectLayerFilter);
 	impl->physicsSystem.SetGravity(JPH::Vec3(0.0f, -9.81f, 0.0f));
+
+	DUPLEX_NS_LOG::Logger::Physics().info("Jolt initialized: maxBodies={}, jobSystem threads={}",
+		maxBodies, static_cast<int>(std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency() - 1 : 1));
 }
 
 void PhysicsWorld::Shutdown()
@@ -169,6 +173,8 @@ void PhysicsWorld::Shutdown()
 		delete JPH::Factory::sInstance;
 		JPH::Factory::sInstance = nullptr;
 	}
+
+	DUPLEX_NS_LOG::Logger::Physics().info("Jolt shut down");
 }
 
 void PhysicsWorld::Update(float realDeltaTime)

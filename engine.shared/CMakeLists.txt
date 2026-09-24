@@ -14,7 +14,8 @@ target_sources(
         "${CMAKE_CURRENT_SOURCE_DIR}/vertex.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.h"
-        
+        "${CMAKE_CURRENT_SOURCE_DIR}/log.h"
+
 
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/math/vec2int.h"
@@ -43,6 +44,7 @@ target_sources(
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/enginetime.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/log.cpp"
 
         "${CMAKE_CURRENT_SOURCE_DIR}/utils/color.cpp"
 
@@ -62,6 +64,12 @@ set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX DEBUG_POSTFI
 target_include_directories(${TARGET_NAME} PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_SOURCE_DIR}/engine.glm"
+)
+
+# PUBLIC: log.h is included from engine.shared's own public header (log.h itself), so every
+# consumer needs spdlog's headers on its include path too, same as engine.glm above.
+target_link_libraries(${TARGET_NAME} PUBLIC
+    spdlog::spdlog
 )
 
 # GLM_FORCE_DEPTH_ZERO_TO_ONE: D3D/Vulkan both use a [0,1] NDC depth range, not OpenGL's

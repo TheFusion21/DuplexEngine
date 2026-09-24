@@ -1,9 +1,11 @@
 #include "window.h"
 #include "renderer.h"
+#include "log.h"
 #include <SDL.h>
 
 using namespace DUPLEX_NS_WINDOW;
 using namespace DUPLEX_NS_GRAPHICS;
+using namespace DUPLEX_NS_LOG;
 
 bool Window::Init(const char* title, ui32 width, ui32 height, bool vulkanSupport)
 {
@@ -79,6 +81,47 @@ bool Window::GetClientSize(ui32& width, ui32& height) const
 bool Window::IsFocused() const
 {
 	return hasFocus;
+}
+
+bool Window::SetFullscreenMode(FullscreenMode mode)
+{
+	Uint32 flag = 0;
+	switch (mode)
+	{
+	case FullscreenMode::Borderless:
+		flag = SDL_WINDOW_FULLSCREEN_DESKTOP;
+		break;
+	case FullscreenMode::Exclusive:
+		flag = SDL_WINDOW_FULLSCREEN;
+		break;
+	case FullscreenMode::Windowed:
+	default:
+		flag = 0;
+		break;
+	}
+
+	if (SDL_SetWindowFullscreen(window, flag) != 0)
+	{
+		Logger::Window().error("SDL_SetWindowFullscreen failed: {}", SDL_GetError());
+		return false;
+	}
+	fullscreenMode = mode;
+
+	if (renderer)
+	{
+		ui32 width, height;
+		GetClientSize(width, height);
+		renderer->Resize(width, height);
+		Logger::Window().info("Fullscreen mode changed to {} ({}x{})",
+			mode == FullscreenMode::Windowed ? "Windowed" : mode == FullscreenMode::Borderless ? "Borderless" : "Exclusive",
+			width, height);
+	}
+	return true;
+}
+
+FullscreenMode Window::GetFullscreenMode() const
+{
+	return fullscreenMode;
 }
 
 bool Window::PollEvents(const std::function<void(const SDL_Event&)>& onEvent)

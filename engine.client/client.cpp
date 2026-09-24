@@ -14,16 +14,21 @@
 #include "input/input.h"
 #include "graphics/light.h"
 #include "mesh.h"
+#include "log.h"
+#include <SDL.h>
 using namespace Game::Client;
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_RESOURCES;
 using namespace DUPLEX_NS_PHYSICS;
+using namespace DUPLEX_NS_WINDOW;
+using namespace DUPLEX_NS_LOG;
 using namespace Engine::ECS;
 
 void Application::Init()
 {
+	Logger::Core().info("Application starting");
 	AnsiString name = "PR210 Engine";
 #if defined(_WIN32)
 	// DUPLEX_RENDERER=d3d12/vulkan opts into the non-default backend for manual verification
@@ -43,6 +48,7 @@ void Application::Init()
 #endif
 	if (!windowReady)
 	{
+		Logger::Core().error("Window creation failed, aborting startup");
 		return;
 	}
 	window.Show();
@@ -135,6 +141,7 @@ void Application::Init()
 
 	Time::Start();
 	this->appState = AppState::Running;
+	Logger::Core().info("Application started");
 }
 
 void Application::Run()
@@ -153,6 +160,24 @@ void Application::Run()
 			this->appState = AppState::Stopped;
 		}
 		Input::Update();
+
+		// F11 toggles borderless fullscreen, Alt+Enter toggles exclusive fullscreen - the two
+		// conventional keybinds for each, matching most games. Both flip back to Windowed if
+		// already active in that mode; switching directly from one fullscreen mode to the other
+		// isn't bound to anything here (no settings UI exists yet to pick one deliberately - see
+		// docs/roadmap Phase 15/16).
+		bool altHeld = Input::GetKey(SDL_SCANCODE_LALT) || Input::GetKey(SDL_SCANCODE_RALT);
+		if (altHeld && Input::GetKeyDown(SDL_SCANCODE_RETURN))
+		{
+			FullscreenMode next = window.GetFullscreenMode() == FullscreenMode::Exclusive ? FullscreenMode::Windowed : FullscreenMode::Exclusive;
+			window.SetFullscreenMode(next);
+		}
+		else if (Input::GetKeyDown(SDL_SCANCODE_F11))
+		{
+			FullscreenMode next = window.GetFullscreenMode() == FullscreenMode::Borderless ? FullscreenMode::Windowed : FullscreenMode::Borderless;
+			window.SetFullscreenMode(next);
+		}
+
 		Transform& t = registry.get<Transform>(dirLight);
 		t.rotation = QuaternionFromEuler({ static_cast<real>(45.0),Time::time * static_cast<real>(22.5), static_cast<real>(0.0) });
 
@@ -165,6 +190,7 @@ void Application::Run()
 
 void Application::Shutdown()
 {
+	Logger::Core().info("Application shutting down");
 	physicsWorld.Shutdown();
 
 	// renderer can still be null here: main() always calls Shutdown() after Init(), even if

@@ -15,6 +15,19 @@ set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
 add_subdirectory ("engine.spirv")
 
+# Phase 10: logging (see engine.shared/log.h for the Duplex::Log wrapper this builds).
+# SPDLOG_FMT_EXTERNAL stays OFF - spdlog's bundled fmt avoids pulling in a second, separate
+# formatting dependency for one header this project doesn't otherwise need. Everything else
+# here already defaults off when spdlog isn't the top-level CMake project (SPDLOG_MASTER_
+# PROJECT), forced explicitly anyway to match this file's existing convention of not relying
+# on a vendored dependency's own default flipping under us on an update.
+set(SPDLOG_BUILD_EXAMPLE OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "" FORCE)
+set(SPDLOG_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+add_subdirectory ("engine.spdlog")
+
 # Phase 9: cross-platform-deterministic physics (see engine.jolt's own README for what this
 # flag guarantees, and project memory for the research behind choosing it). Jolt's
 # Build/CMakeLists.txt auto-disables its UnitTests/Samples/JoltViewer/HelloWorld/

@@ -29,7 +29,6 @@ namespace DUPLEX_NS_GRAPHICS
 		ID3D12Device* device = nullptr;
 		ID3D12CommandQueue* commandQueue = nullptr;
 		IDXGISwapChain3* swapChain = nullptr;
-		BOOL inFullscreen = FALSE;
 		bool vsyncEnable = true;
 		bool wireframe = false;
 
@@ -181,8 +180,6 @@ namespace DUPLEX_NS_GRAPHICS
 		BufferHandle CreateBuffer(BufferType type, const void* data, int dataSize, UsageType usage = UsageType::Default) override;
 
 		bool Resize(ui32 width, ui32 height) override;
-
-		bool CheckForFullscreen() override;
 
 		void ReleaseTexture(TextureHandle& texture) override;
 		void ReleaseTextureSRV(ShaderResourceViewHandle& srv) override;

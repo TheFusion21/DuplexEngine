@@ -19,10 +19,12 @@
 #include "math/vec2.h"
 #include "math/mat4x4.h"
 #include "vertex.h"
+#include "log.h"
 
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_LOG;
 
 namespace
 {
@@ -96,6 +98,7 @@ bool D3D12Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 
 	if (!CreateDefaultTexture()) return false;
 
+	Logger::Renderer().info("D3D12Renderer initialized ({}x{})", width, height);
 	return true;
 }
 
@@ -143,8 +146,8 @@ bool D3D12Renderer::CreateDeviceAndSwapChain(SDL_Window* window, ui32 width, ui3
 	{
 		char adapterDescText[128];
 		wcstombs(adapterDescText, adapterDesc.Description, 128);
-		printf("Graphics Device: %s\n", adapterDescText);
-		printf("Graphics available Memory: %d MB\n", static_cast<ui32>(adapterDesc.DedicatedVideoMemory * 9.5367E-7f));
+		Logger::Renderer().info("Graphics Device: {}", adapterDescText);
+		Logger::Renderer().info("Graphics available Memory: {} MB", static_cast<ui32>(adapterDesc.DedicatedVideoMemory * 9.5367E-7f));
 	}
 
 	if (FAILED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), reinterpret_cast<void**>(&device))))
@@ -163,9 +166,25 @@ bool D3D12Renderer::CreateDeviceAndSwapChain(SDL_Window* window, ui32 width, ui3
 		{
 			DWORD cookie = 0;
 			infoQueue->RegisterMessageCallback(
-				[](D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY, D3D12_MESSAGE_ID, LPCSTR pDescription, void*)
+				[](D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY severity, D3D12_MESSAGE_ID, LPCSTR pDescription, void*)
 				{
-					printf("[D3D12 DEBUG] %s\n", pDescription);
+					switch (severity)
+					{
+					case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+					case D3D12_MESSAGE_SEVERITY_ERROR:
+						Logger::Renderer().error("[D3D12] {}", pDescription);
+						break;
+					case D3D12_MESSAGE_SEVERITY_WARNING:
+						Logger::Renderer().warn("[D3D12] {}", pDescription);
+						break;
+					case D3D12_MESSAGE_SEVERITY_INFO:
+					default:
+						Logger::Renderer().info("[D3D12] {}", pDescription);
+						break;
+					case D3D12_MESSAGE_SEVERITY_MESSAGE:
+						Logger::Renderer().trace("[D3D12] {}", pDescription);
+						break;
+					}
 				},
 				D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &cookie);
 			SAFERELEASE(infoQueue);
@@ -868,6 +887,8 @@ void D3D12Renderer::WaitForGpu()
 
 void D3D12Renderer::Shutdown()
 {
+	Logger::Renderer().info("D3D12Renderer shutting down");
+
 	if (device)
 	{
 		WaitForGpu();
@@ -1239,18 +1260,6 @@ bool D3D12Renderer::Resize(ui32 newWidth, ui32 newHeight)
 
 	SetViewPort();
 	return true;
-}
-
-bool D3D12Renderer::CheckForFullscreen()
-{
-	BOOL fullscreen = FALSE;
-	swapChain->GetFullscreenState(&fullscreen, nullptr);
-	if (fullscreen != inFullscreen)
-	{
-		inFullscreen = fullscreen;
-		return true;
-	}
-	return false;
 }
 
 bool D3D12Renderer::InitImGui(SDL_Window* window)

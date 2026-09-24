@@ -9,3 +9,4 @@
 #define DUPLEX_NS_RESOURCES Engine::Resources
 #define DUPLEX_NS_SIMD Duplex::Simd
 #define DUPLEX_NS_PHYSICS Duplex::Physics
+#define DUPLEX_NS_LOG Duplex::Log

@@ -5,6 +5,7 @@
 #include "math/mathutils.h"
 #include "utils/util.h"
 #include "vertex.h"
+#include "log.h"
 #include <cstring>
 #include <cstdio>
 #include <SDL.h>
@@ -16,6 +17,7 @@
 using namespace DUPLEX_NS_GRAPHICS;
 using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
+using namespace DUPLEX_NS_LOG;
 
 #define VK_CHECK(expr) { \
     ASSERT(expr == VK_SUCCESS); \
@@ -26,25 +28,24 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData) {
     // Was entirely commented out ("TODO: add logger messages") - every validation
-    // error/warning was being silently swallowed. There's no Logger class in this codebase to
-    // call into, so this prints directly; replace if one gets added later.
-    const char* prefix = "Vulkan";
+    // error/warning was being silently swallowed, then briefly routed to fprintf(stderr, ...)
+    // directly ("no Logger class in this codebase to call into" - that's Phase 10 below, now
+    // that it exists).
     switch (messageSeverity) {
     default:
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        prefix = "Vulkan ERROR";
+        Logger::Renderer().error("[Vulkan] {}", pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        prefix = "Vulkan WARNING";
+        Logger::Renderer().warn("[Vulkan] {}", pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        prefix = "Vulkan INFO";
+        Logger::Renderer().info("[Vulkan] {}", pCallbackData->pMessage);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        prefix = "Vulkan VERBOSE";
+        Logger::Renderer().trace("[Vulkan] {}", pCallbackData->pMessage);
         break;
     }
-    fprintf(stderr, "[%s] %s\n", prefix, pCallbackData->pMessage);
 
     return VK_FALSE;
 }
@@ -132,6 +133,11 @@ bool VulkanRenderer::Init(SDL_Window* window, ui32 width, ui32 height)
 
     this->CreateSurface(window);
     this->physicalDevice = this->SelectPhysicalDevice();
+    {
+        VkPhysicalDeviceProperties selectedProps;
+        vkGetPhysicalDeviceProperties(this->physicalDevice, &selectedProps);
+        Logger::Renderer().info("Graphics Device: {}", selectedProps.deviceName);
+    }
     this->CreateLogicalDevice();
     this->CreateAllocator();
     this->CreateSwapchain();
@@ -149,6 +155,7 @@ bool VulkanRenderer::Init(SDL_Window* window, ui32 width, ui32 height)
     this->CreateWorldConstantBuffers();
     this->CreateDefaultTexture();
     this->CreateShader();
+	Logger::Renderer().info("VulkanRenderer initialized ({}x{})", width, height);
 	return true;
 }
 
@@ -470,10 +477,11 @@ VkShaderModule VulkanRenderer::CreateShaderModuleFromFile(const char* path)
     FILE* file = fopen(path, "rb");
     if (file == nullptr)
     {
-        // fprintf(stderr, ...), not MessageBoxA - this file builds on Linux too (see
-        // debugCallback above for the same convention already used for Vulkan validation
-        // messages), unlike D3D11Renderer/D3D12Renderer's identical fix for this same bug.
-        fprintf(stderr, "Could not find %s - make sure the working directory is the repo root (e.g. run from a terminal cd'd there), not wherever the executable itself lives.\n", path);
+        // Logger::Renderer().error(...), not MessageBoxA - this file builds on Linux too, unlike
+        // D3D11Renderer/D3D12Renderer's identical fix for this same bug (Phase 10's console
+        // sink still surfaces this directly in the terminal, same as the fprintf(stderr, ...)
+        // this replaced did, but now also lands in bin/logs/duplex.log).
+        Logger::Renderer().error("Could not find {} - make sure the working directory is the repo root (e.g. run from a terminal cd'd there), not wherever the executable itself lives.", path);
         return nullptr;
     }
     fseek(file, 0, SEEK_END);
@@ -483,7 +491,7 @@ VkShaderModule VulkanRenderer::CreateShaderModuleFromFile(const char* path)
     if (fread(spirv.data(), 1, len, file) != static_cast<size_t>(len))
     {
         fclose(file);
-        fprintf(stderr, "Failed to read %s\n", path);
+        Logger::Renderer().error("Failed to read {}", path);
         return nullptr;
     }
     fclose(file);
@@ -1533,15 +1541,10 @@ bool VulkanRenderer::Resize(ui32 newWidth, ui32 newHeight)
     return true;
 }
 
-bool VulkanRenderer::CheckForFullscreen()
-{
-    // No exclusive-fullscreen concept on this (SDL2-owned window) path, unlike D3D11/DXGI -
-    // nothing currently calls this (see engine.window/window.cpp PollEvents()).
-    return false;
-}
-
 void VulkanRenderer::Shutdown()
 {
+    Logger::Renderer().info("VulkanRenderer shutting down");
+
     if (this->device)
     {
         vkDeviceWaitIdle(this->device);

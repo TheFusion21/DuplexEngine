@@ -13,7 +13,6 @@ namespace DUPLEX_NS_GRAPHICS
 	private:
 		bool vsyncEnable = true;
 		bool wireframe = false;
-		BOOL inFullscreen = false;
 
 		IDXGISwapChain* swapChain = nullptr;
 		//the render device
@@ -103,8 +102,6 @@ namespace DUPLEX_NS_GRAPHICS
 		void ClearLights();
 
 		void SetLight(DUPLEX_NS_UTIL::GpuLight lightDescriptor);
-
-		bool CheckForFullscreen();
 
 		TextureHandle CreateTexture(ui32 width, ui32 height, ui32 levels, TextureFormat format, void* data = nullptr);
 		void ReleaseTexture(TextureHandle& texture);

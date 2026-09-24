@@ -51,6 +51,14 @@ namespace DUPLEX_NS_GRAPHICS
 
 		ID3D11Debug* debug = nullptr;
 		std::vector<ID3D11ShaderResourceView*> textureViews;
+
+		// A 1x1 white pixel, bound for any material texture slot a draw call didn't set via
+		// UseTexture() - matches D3D12Renderer::defaultTextureView/VulkanRenderer::
+		// defaultTextureHandle, which both already did this. Without it, an unmaterialed object
+		// (e.g. the physics demo's floor/boxes) sampled a null SRV and rendered solid black,
+		// instead of the plain lit-white look the other two backends show for the same object.
+		TextureHandle defaultTextureHandle;
+		ShaderResourceViewHandle defaultTextureView;
 		//Lights
 		//std::vector<Engine::Components::DirectionalLight*> dirLights;
 		//std::vector<Engine::Components::PointLight*> pointLights;

@@ -42,11 +42,17 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     SDL2::SDL2
 )
 
-# D3D11 is Windows-only; the DX11 backend source only builds there.
+# D3D11/D3D12 are Windows-only; their ImGui backend sources only build there.
 if(WIN32)
     target_sources(${TARGET_NAME}
         PUBLIC "${IMGUI_ROOT}/backends/imgui_impl_dx11.h"
         PRIVATE "${IMGUI_ROOT}/backends/imgui_impl_dx11.cpp"
     )
     target_link_libraries(${TARGET_NAME} PUBLIC d3d11)
+
+    target_sources(${TARGET_NAME}
+        PUBLIC "${IMGUI_ROOT}/backends/imgui_impl_dx12.h"
+        PRIVATE "${IMGUI_ROOT}/backends/imgui_impl_dx12.cpp"
+    )
+    target_link_libraries(${TARGET_NAME} PUBLIC d3d12)
 endif()

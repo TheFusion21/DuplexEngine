@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
+#include <memory>
 #include "namespaces.h"
 
 #define FRAME_LAG 2
@@ -135,15 +136,29 @@ namespace DUPLEX_NS_GRAPHICS
 			VkBuffer buffer = nullptr;
 			VmaAllocation allocation = nullptr;
 		};
+		// `lifetime`: unlike a D3D11 SRV (which automatically holds a COM reference to its source
+		// resource) or a D3D12 descriptor (fixed by an explicit extra AddRef/Release - see
+		// D3D12Renderer), a VkImageView holds no reference to its source VkImage at all, and
+		// texture2d.cpp's usage pattern (create a texture, create its SRV, then immediately
+		// release the texture) would otherwise destroy the VkImage - and free its VMA-managed
+		// memory - out from under every view still pointing at it. Confirmed as a live bug, not
+		// just theoretical: this exact pattern segfaulted on real hardware once the equivalent
+		// D3D12 bug (see D3D12ShaderResourceView) prompted checking Vulkan too. A shared_ptr
+		// whose deleter calls vmaDestroyImage, copied into both the texture pool entry and every
+		// VulkanImageView created from it, reproduces automatic reference-counted lifetime
+		// without hand-rolled refcounting - the underlying image is destroyed once the last copy
+		// (in either pool) goes away, regardless of release order.
 		struct VulkanTexture
 		{
 			VkImage image = nullptr;
 			VmaAllocation allocation = nullptr;
 			VkFormat format = VK_FORMAT_UNDEFINED;
+			std::shared_ptr<void> lifetime;
 		};
 		struct VulkanImageView
 		{
 			VkImageView view = nullptr;
+			std::shared_ptr<void> textureLifetime;
 		};
 		HandlePool<VulkanBuffer, BufferHandle> bufferPool;
 		HandlePool<VulkanTexture, TextureHandle> texturePool;

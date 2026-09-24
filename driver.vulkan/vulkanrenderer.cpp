@@ -313,6 +313,11 @@ void VulkanRenderer::CreateLogicalDevice()
     if (!presentSharesGraphicsQueue)
         indices.push_back(presentQueueIndex);
 
+    // Same shape as the swapchain's queueFamiliyIndices fix below: pQueuePriorities is only read
+    // later by vkCreateDevice, so it can't point at a loop-scoped local that's already gone out
+    // of scope by then. One shared priority value works fine here since every queue in
+    // queueCreateInfos uses the same 1.0f.
+    float queuePriority = 1.0f;
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(indices.size());
     for (ui32 i = 0; i < indices.size(); i++)
     {
@@ -321,7 +326,6 @@ void VulkanRenderer::CreateLogicalDevice()
         queueCreateInfos[i].queueCount = 1;
         queueCreateInfos[i].flags = 0;
         queueCreateInfos[i].pNext = nullptr;
-        float queuePriority = 1.0f;
         queueCreateInfos[i].pQueuePriorities = &queuePriority;
     }
 
@@ -426,9 +430,16 @@ void VulkanRenderer::CreateSwapchain()
     swapchainCreateInfo.imageArrayLayers = 1;
     swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+    // Declared here, not inside the if-block below, because swapchainCreateInfo.
+    // pQueueFamilyIndices is only actually read later by vkCreateSwapchainKHR - a local scoped to
+    // the if-block would go out of scope before that read, leaving a dangling pointer. Confirmed
+    // as a real, live bug (not just theoretical UB): on hardware where the graphics and present
+    // queue families actually differ, this exact backend produced this exact symptom - the
+    // Vulkan validation layer flagged garbage queueFamilyIndices values reaching
+    // vkCreateSwapchainKHR, and it crashed shortly after.
+    ui32 queueFamiliyIndices[] = { static_cast<ui32>(this->graphicsFamilyQueueIndex), static_cast<ui32>(this->presentFamilyQueueIndex) };
     if (this->graphicsFamilyQueueIndex != this->presentFamilyQueueIndex)
     {
-        ui32 queueFamiliyIndices[] = { static_cast<ui32>(this->graphicsFamilyQueueIndex),static_cast<ui32>(this->presentFamilyQueueIndex) };
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         swapchainCreateInfo.queueFamilyIndexCount = 2;
         swapchainCreateInfo.pQueueFamilyIndices = queueFamiliyIndices;
@@ -452,10 +463,18 @@ void VulkanRenderer::CreateSwapchain()
 
 VkShaderModule VulkanRenderer::CreateShaderModuleFromFile(const char* path)
 {
+    // Both branches below were an uncaught throw std::string(...) - nothing catches exceptions
+    // this deep in Init(), so either crashed silently instead of explaining itself. This is the
+    // exact failure a wrong working directory produces (e.g. double-clicking the exe in
+    // Explorer, which sets CWD to its own folder, not the repo root this relative path assumes).
     FILE* file = fopen(path, "rb");
     if (file == nullptr)
     {
-        throw std::string("shader not found: ") + path;
+        // fprintf(stderr, ...), not MessageBoxA - this file builds on Linux too (see
+        // debugCallback above for the same convention already used for Vulkan validation
+        // messages), unlike D3D11Renderer/D3D12Renderer's identical fix for this same bug.
+        fprintf(stderr, "Could not find %s - make sure the working directory is the repo root (e.g. run from a terminal cd'd there), not wherever the executable itself lives.\n", path);
+        return nullptr;
     }
     fseek(file, 0, SEEK_END);
     long len = ftell(file);
@@ -464,7 +483,8 @@ VkShaderModule VulkanRenderer::CreateShaderModuleFromFile(const char* path)
     if (fread(spirv.data(), 1, len, file) != static_cast<size_t>(len))
     {
         fclose(file);
-        throw std::string("failed to read shader: ") + path;
+        fprintf(stderr, "Failed to read %s\n", path);
+        return nullptr;
     }
     fclose(file);
 
@@ -484,6 +504,14 @@ void VulkanRenderer::CreateShader()
     // d3d11renderer.cpp CreateShader()).
     VkShaderModule vertexModule = CreateShaderModuleFromFile("./bin/data/shd/bsdfVertex.spirv");
     VkShaderModule fragmentModule = CreateShaderModuleFromFile("./bin/data/shd/bsdfPixel.spirv");
+    if (vertexModule == nullptr || fragmentModule == nullptr)
+    {
+        // CreateShaderModuleFromFile already reported why (missing/unreadable file) - bail out
+        // instead of feeding a null module into vkCreateGraphicsPipelines below.
+        if (vertexModule) vkDestroyShaderModule(this->device, vertexModule, nullptr);
+        if (fragmentModule) vkDestroyShaderModule(this->device, fragmentModule, nullptr);
+        return;
+    }
 
     VkPipelineShaderStageCreateInfo vertStage = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
     vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -497,25 +525,27 @@ void VulkanRenderer::CreateShader()
 
     VkPipelineShaderStageCreateInfo stages[] = { vertStage, fragStage };
 
-    // Matches Vertex (engine.shared/vertex.h) exactly: position/normal/texCoords/tangent are
-    // the only attributes the compiled shader actually reads (bitTangent is unused - DXC
-    // strips it, confirmed via spirv-cross reflection - so it's not given a location here even
-    // though it's still part of the C++ struct/vertex buffer stride).
+    // Matches Vertex (engine.shared/vertex.h). The previous comment here claimed bitTangent
+    // (location 4) was stripped as unused by DXC and so didn't need a binding - contradicted by
+    // Vulkan's own validation layer on real hardware ("Vertex shader consumes input at location 4
+    // but not provided"), which then crashed the pipeline. Location 4 is provided here now,
+    // matching D3D11Renderer/D3D12Renderer's input layouts, which both already include it.
     VkVertexInputBindingDescription bindingDesc = {};
     bindingDesc.binding = 0;
     bindingDesc.stride = sizeof(Vertex);
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription attributeDescs[4] = {};
+    VkVertexInputAttributeDescription attributeDescs[5] = {};
     attributeDescs[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<ui32>(offsetof(Vertex, position)) };
     attributeDescs[1] = { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<ui32>(offsetof(Vertex, normal)) };
     attributeDescs[2] = { 2, 0, VK_FORMAT_R32G32_SFLOAT, static_cast<ui32>(offsetof(Vertex, texCoords)) };
     attributeDescs[3] = { 3, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<ui32>(offsetof(Vertex, tangent)) };
+    attributeDescs[4] = { 4, 0, VK_FORMAT_R32G32B32_SFLOAT, static_cast<ui32>(offsetof(Vertex, bitTangent)) };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
-    vertexInputInfo.vertexAttributeDescriptionCount = 4;
+    vertexInputInfo.vertexAttributeDescriptionCount = 5;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescs;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -539,7 +569,16 @@ void VulkanRenderer::CreateShader()
     rasterizer.polygonMode = wireFrame ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     // D3D11's rasterDesc.FrontCounterClockwise = true (see d3d11renderer.cpp Init()) - match it
-    // so both backends cull the same winding.
+    // directly, unchanged, despite BeginScene()'s negative-height viewport (see its own comment)
+    // fixing Vulkan's upside-down rendering. It's tempting to reason that flipping the viewport's
+    // Y axis must also flip the winding the rasterizer perceives, and so cullMode/frontFace need
+    // to compensate - that reasoning is backwards here and was actually tried (CW) first: once
+    // the Y-flip makes Vulkan's NDC-to-screen mapping match D3D11's exactly, the two pipelines'
+    // winding computation becomes equivalent too, so the SAME frontFace as D3D11 is what's
+    // correct, not its opposite. Confirmed directly, not just re-derived on paper a second time:
+    // VK_FRONT_FACE_CLOCKWISE visibly showed the wrong (inside/back) face of the BoomBox model's
+    // handle - a grille-patterned surface where D3D11/D3D12 render it smooth - and switching back
+    // to CCW fixed it.
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
@@ -775,6 +814,16 @@ TextureHandle VulkanRenderer::CreateTexture(ui32 width, ui32 height, ui32 levels
     tex.format = vkFormat;
     VK_CHECK(vmaCreateImage(this->allocator, &imageInfo, &allocInfo, &tex.image, &tex.allocation, nullptr));
 
+    // See VulkanTexture's declaration - this anchors the image's actual lifetime, independent of
+    // when ReleaseTexture() clears this handle's own pool slot.
+    VmaAllocator allocatorForDeleter = this->allocator;
+    VkImage imageForDeleter = tex.image;
+    VmaAllocation allocationForDeleter = tex.allocation;
+    tex.lifetime = std::shared_ptr<void>(nullptr, [allocatorForDeleter, imageForDeleter, allocationForDeleter](void*)
+    {
+        vmaDestroyImage(allocatorForDeleter, imageForDeleter, allocationForDeleter);
+    });
+
     if (data != nullptr && !isDepth)
     {
         ui32 pixelSize = PixelSizeFromTextureFormat(format);
@@ -815,8 +864,9 @@ void VulkanRenderer::ReleaseTexture(TextureHandle& texture)
 {
     if (!texture.IsValid())
         return;
-    VulkanTexture tex = texturePool.Get(texture);
-    vmaDestroyImage(this->allocator, tex.image, tex.allocation);
+    // Actual destruction happens once the VulkanTexture's `lifetime` shared_ptr - possibly also
+    // held by one or more VulkanImageViews created from it (see CreateTextureSRV) - drops to
+    // zero references, not necessarily here. texturePool.Release() clears this slot's own copy.
     texturePool.Release(texture);
 }
 
@@ -841,6 +891,9 @@ ShaderResourceViewHandle VulkanRenderer::CreateTextureSRV(TextureHandle texture,
 
     VulkanImageView view;
     VK_CHECK(vkCreateImageView(this->device, &viewInfo, nullptr, &view.view));
+    // Keeps the source image alive for as long as this view exists, independent of whether/when
+    // the caller releases its own TextureHandle - see VulkanTexture's declaration.
+    view.textureLifetime = tex.lifetime;
     return srvPool.Create(view);
 }
 
@@ -1312,7 +1365,14 @@ void VulkanRenderer::BeginScene()
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
 
-    VkViewport viewport = { 0.0f, 0.0f, static_cast<float>(swapchainExtent.width), static_cast<float>(swapchainExtent.height), 0.0f, 1.0f };
+    // Negative height (Vulkan 1.1+ core, targeted via VK_API_VERSION_1_2 above) flips Vulkan's
+    // rasterization to match the OpenGL/D3D clip-space convention GLM's glm::perspective (used
+    // by camerasystem.h, shared across all three backends) assumes - Vulkan's own NDC Y axis
+    // points the opposite way by default, otherwise, and confirmed directly: without this, every
+    // Vulkan frame rendered upside down while the identical shared camera math rendered right-
+    // side up on D3D11/D3D12. Fixed here, not in shared code, since D3D11/D3D12 need no such
+    // adjustment - this is purely a Vulkan-vs-D3D viewport convention difference.
+    VkViewport viewport = { 0.0f, static_cast<float>(swapchainExtent.height), static_cast<float>(swapchainExtent.width), -static_cast<float>(swapchainExtent.height), 0.0f, 1.0f };
     vkCmdSetViewport(cmd, 0, 1, &viewport);
     VkRect2D scissor = { { 0, 0 }, swapchainExtent };
     vkCmdSetScissor(cmd, 0, 1, &scissor);
@@ -1501,17 +1561,23 @@ void VulkanRenderer::Shutdown()
     // Anything still allocated through CreateTexture/CreateTextureSRV/CreateBuffer (mesh
     // vertex/index buffers, material textures, ...) that its owner never explicitly released -
     // unlike D3D11's COM refcounting, VMA asserts on destruction if any allocation from a
-    // memory block is still outstanding, so these must be drained explicitly. Views before
-    // images before buffers: image views hold onto their source image.
+    // memory block is still outstanding, so these must be drained explicitly.
     srvPool.ForEachAlive([this](const VulkanImageView& view) {
         vkDestroyImageView(this->device, view.view, nullptr);
-    });
-    texturePool.ForEachAlive([this](const VulkanTexture& tex) {
-        vmaDestroyImage(this->allocator, tex.image, tex.allocation);
     });
     bufferPool.ForEachAlive([this](const VulkanBuffer& buf) {
         vmaDestroyBuffer(this->allocator, buf.buffer, buf.allocation);
     });
+    // Image destruction itself is NOT done here - it's owned by each VulkanTexture/
+    // VulkanImageView's `lifetime`/`textureLifetime` shared_ptr (see VulkanTexture's
+    // declaration), which calls vmaDestroyImage exactly once regardless of how many copies
+    // (texturePool's own, plus any surviving VulkanImageView's) still reference it. Resetting
+    // both pools drops every such copy right now, while `allocator` below is still valid - that
+    // deleter captures it by value, so this can't be left to whenever texturePool/srvPool's own
+    // destructors happen to run (VulkanRenderer's implicit destructor, well after Shutdown()
+    // returns and vmaDestroyAllocator() has already invalidated it).
+    texturePool = HandlePool<VulkanTexture, TextureHandle>{};
+    srvPool = HandlePool<VulkanImageView, ShaderResourceViewHandle>{};
 
     for (auto& wb : worldConstantBuffers)
     {

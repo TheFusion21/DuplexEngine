@@ -4,6 +4,9 @@
 #include "math/types.h"
 #if defined(_WIN32)
 #include "d3d11renderer.h"
+#include "d3d12renderer.h"
+#include "vulkanrenderer.h"
+#include <cstdlib>
 #else
 #include "vulkanrenderer.h"
 #endif
@@ -23,7 +26,18 @@ void Application::Init()
 {
 	AnsiString name = "PR210 Engine";
 #if defined(_WIN32)
-	bool windowReady = window.Init(name, 1280, 720);
+	// DUPLEX_RENDERER=d3d12/vulkan opts into the non-default backend for manual verification
+	// without changing the default (D3D11 stays the default on Windows) - see docs/roadmap.
+	// Read before window.Init() so a Vulkan override can request SDL_WINDOW_VULKAN up front -
+	// SDL windows aren't retroactively Vulkan-capable after creation.
+	char* rendererOverride = nullptr;
+	size_t rendererOverrideLen = 0;
+	_dupenv_s(&rendererOverride, &rendererOverrideLen, "DUPLEX_RENDERER");
+	bool useD3D12 = rendererOverride != nullptr && _stricmp(rendererOverride, "d3d12") == 0;
+	bool useVulkan = rendererOverride != nullptr && _stricmp(rendererOverride, "vulkan") == 0;
+	free(rendererOverride);
+
+	bool windowReady = window.Init(name, 1280, 720, useVulkan);
 #else
 	bool windowReady = window.Init(name, 1280, 720, true);
 #endif
@@ -34,7 +48,12 @@ void Application::Init()
 	window.Show();
 	window.SetTitle("THIS IS A Engine");
 #if defined(_WIN32)
-	renderer = std::make_unique<D3D11Renderer>();
+	if (useD3D12)
+		renderer = std::make_unique<D3D12Renderer>();
+	else if (useVulkan)
+		renderer = std::make_unique<VulkanRenderer>();
+	else
+		renderer = std::make_unique<D3D11Renderer>();
 #else
 	renderer = std::make_unique<VulkanRenderer>();
 #endif

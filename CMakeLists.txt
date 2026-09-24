@@ -42,6 +42,26 @@ set(USE_AVX512 OFF CACHE BOOL "" FORCE)
 # essentially nothing (LTO mainly helps cross-translation-unit inlining, not correctness) and
 # removes a whole category of risk on the untested platform.
 set(INTERPROCEDURAL_OPTIMIZATION OFF CACHE BOOL "" FORCE)
+# Jolt's Build/CMakeLists.txt defaults JPH_USE_DX12/JPH_USE_VK/JPH_USE_MTL/JPH_USE_CPU_COMPUTE
+# all ON - these build an entirely separate, experimental GPU-compute module (hair simulation
+# compute shaders under Jolt/Compute/, unrelated to Jolt's CPU rigid-body physics this project
+# actually integrated in Phase 9) with its own HLSL->DXIL/SPIR-V shader compile step and its own
+# find_package(Vulkan) call, independent of this project's own driver.vulkan. Never previously
+# caught because Phase 9 was only ever verified on Linux, where JPH_USE_DX12's DXIL path is
+# inert anyway. On Windows this breaks the build two different ways: a warning-as-error
+# (NTDDI_WIN11_DT undefined) inside ComputeSystemVK*.cpp against the newer 10.0.26100.0 SDK, and
+# a "file not found" from Jolt's own dxc invocation for the Hair*.hlsl shaders (relative -I path
+# assumes a working directory MSBuild's custom-build step doesn't give it). It's also the root
+# cause of the GitHub Actions Windows job failing at CMake's generate step with a bogus
+# "VULKAN_SDK/include" path baked into Jolt's INTERFACE_INCLUDE_DIRECTORIES - Jolt's own
+# find_package(Vulkan) resolves differently than this project's (line 9 above), depending on how
+# the CI runner's Vulkan SDK install action sets $ENV{VULKAN_SDK}. None of this module is used
+# by anything this engine does, so disabling it outright (matching the CACHE BOOL "" FORCE
+# pattern already used above) removes the whole fragile surface rather than debugging it.
+set(JPH_USE_DX12 OFF CACHE BOOL "" FORCE)
+set(JPH_USE_VK OFF CACHE BOOL "" FORCE)
+set(JPH_USE_MTL OFF CACHE BOOL "" FORCE)
+set(JPH_USE_CPU_COMPUTE OFF CACHE BOOL "" FORCE)
 add_subdirectory ("engine.jolt/Build")
 
 # Cross-platform subprojects: buildable and tested on both Windows and Linux.

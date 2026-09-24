@@ -2,6 +2,7 @@
 // EXTERNAL INCLUDES
 
 #include <iostream>
+#include <algorithm>
 #define NOMINMAX
 #include <d3dcompiler.h>
 #include <SDL.h>
@@ -25,6 +26,53 @@ using namespace DUPLEX_NS_MATH;
 using namespace DUPLEX_NS_UTIL;
 using namespace DUPLEX_NS_GRAPHICS;
 
+namespace
+{
+	// res/CMakeLists.txt compiles the shared .spirv with -fvk-t-shift 10 0 -fvk-s-shift 20 0, so
+	// every SRV's Vulkan binding sits at +10 and every sampler's at +20 - purely to keep them out
+	// of the way of cbuffers b0/b1 in a single Vulkan descriptor set (see that file's own
+	// comment). SPIRV-Cross's HLSL backend otherwise preserves those binding numbers verbatim as
+	// HLSL register numbers, which both overshoots HLSL SM5.0's 16-slot sampler limit (a bound
+	// sampler landing on s20 fails to compile outright - confirmed directly: D3DCompile fails
+	// with "maximum sampler register index exceeded, target has 16 slots") and disagrees with
+	// where this renderer actually binds resources on the CPU side (PSSetShaderResources(0, ...)/
+	// PSSetSamplers(0, ...) - see Render()). This undoes exactly that shift so the cross-compiled
+	// HLSL ends up back at the registers the original res/ps/*.hlsl source declared.
+	void RemapVulkanShiftedBindingsToHlsl(spirv_cross::CompilerHLSL& compiler)
+	{
+		// add_hlsl_resource_binding() keys its remap table by (stage, desc_set, binding) - stage
+		// defaults to spv::ExecutionModelMax on a fresh HLSLResourceBinding, but
+		// remap_hlsl_resource_binding() looks entries up by this compiler's *actual*
+		// get_execution_model() (Vertex/Fragment/...), so a remap left at the default stage
+		// silently never matches and is never applied. Must be set explicitly per compiler
+		// instance (confirmed by testing: omitting this left every SRV/sampler register
+		// unremapped, still landing on the original Vulkan-shifted binding number).
+		spv::ExecutionModel stage = compiler.get_execution_model();
+		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+		for (const spirv_cross::Resource& res : resources.separate_images)
+		{
+			ui32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+			spirv_cross::HLSLResourceBinding remap;
+			remap.stage = stage;
+			remap.desc_set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			remap.binding = binding;
+			remap.srv.register_space = 0;
+			remap.srv.register_binding = binding - 10;
+			compiler.add_hlsl_resource_binding(remap);
+		}
+		for (const spirv_cross::Resource& res : resources.separate_samplers)
+		{
+			ui32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+			spirv_cross::HLSLResourceBinding remap;
+			remap.stage = stage;
+			remap.desc_set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			remap.binding = binding;
+			remap.sampler.register_space = 0;
+			remap.sampler.register_binding = binding - 20;
+			compiler.add_hlsl_resource_binding(remap);
+		}
+	}
+}
 
 bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 {
@@ -255,6 +303,23 @@ bool D3D11Renderer::Init(SDL_Window* window, ui32 width, ui32 height)
 #endif
 	//GenerateQuad();
 	CreateShader();
+
+	// See defaultTextureHandle's declaration - matches D3D12Renderer/VulkanRenderer, which both
+	// already had this.
+	ui32 white = 0xFFFFFFFFu;
+	defaultTextureHandle = CreateTexture(1, 1, 1, TextureFormat::RGBA32, &white);
+	if (!defaultTextureHandle.IsValid())
+	{
+		MessageBoxA(NULL, "Could not create default texture", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return false;
+	}
+	defaultTextureView = CreateTextureSRV(defaultTextureHandle, TextureFormat::RGBA32);
+	if (!defaultTextureView.IsValid())
+	{
+		MessageBoxA(NULL, "Could not create default texture SRV", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		return false;
+	}
+
 	return true;
 }
 
@@ -363,13 +428,18 @@ void D3D11Renderer::CreateShader()
 {
 	ID3DBlob* vertexShaderBlob = nullptr;
 	ID3DBlob* pixelShaderBlob = nullptr;
-	ID3DBlob* pixelSDFShaderBlob = nullptr;
-	
+
 	{
 		FILE* file = fopen("./bin/data/shd/bsdfVertex.spirv", "rb");
 		if (file == nullptr)
 		{
-			throw std::string("bsdfVertex shader now found");
+			// Was an uncaught throw std::string(...) - nothing anywhere catches exceptions from
+			// this deep in Init(), so it crashed silently instead of explaining itself. This is
+			// the exact failure a wrong working directory produces (e.g. double-clicking the exe
+			// in Explorer, which sets CWD to its own folder, not the repo root these ./bin/...
+			// paths assume) - confirmed directly by reproducing it.
+			MessageBoxA(NULL, "Could not find ./bin/data/shd/bsdfVertex.spirv - make sure the working directory is the repo root (e.g. run from a terminal cd'd there), not wherever the .exe itself lives.", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+			return;
 		}
 		fseek(file, 0, SEEK_END);
 		long len = ftell(file) / sizeof(ui32);
@@ -391,9 +461,9 @@ void D3D11Renderer::CreateShader()
 		hlslCompiler.add_vertex_attribute_remap({ 3, "TANGENT0" });
 		hlslCompiler.add_vertex_attribute_remap({ 4, "BITTANGENT0" });
 		hlslCompiler.add_vertex_attribute_remap({ 5, "BITTANGENT0" });
+		RemapVulkanShiftedBindingsToHlsl(hlslCompiler);
 		std::string vertexShaderHLSLSource = hlslCompiler.compile();
 		auto model = hlslCompiler.get_execution_model();
-		printf(vertexShaderHLSLSource.c_str());
 		D3D_SHADER_MACRO defines[] =
 		{
 			NULL, NULL
@@ -402,17 +472,26 @@ void D3D11Renderer::CreateShader()
 		HRESULT res = D3DCompile(vertexShaderHLSLSource.c_str(), vertexShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "vs_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &vertexShaderBlob, &errorBlob);
 		if (FAILED(res))
 		{
-			auto error = (char*)errorBlob->GetBufferPointer();
-			errorBlob->Release();
-			printf(error);
+			// Previously fell through here (only logging via a MessageBox and continuing) -
+			// vertexShaderBlob stays null on a failed compile, so every use of it below
+			// (CreateVertexShader/CreateInputLayout) was a guaranteed null-pointer crash rather
+			// than a clean, diagnosable failure.
+			if (errorBlob)
+			{
+				MessageBoxA(NULL, static_cast<char*>(errorBlob->GetBufferPointer()), "Vertex shader compile failed", MB_OK | MB_ICONEXCLAMATION);
+				errorBlob->Release();
+			}
+			return;
 		}
-		printf("oooh yeah");
 	}
 	{
 		FILE* file = fopen("./bin/data/shd/bsdfPixel.spirv", "rb");
 		if (file == nullptr)
 		{
-			throw std::string("bsdfPixel shader now found");
+			// See the bsdfVertex block above for why this is a MessageBoxA + return, not a throw.
+			MessageBoxA(NULL, "Could not find ./bin/data/shd/bsdfPixel.spirv - make sure the working directory is the repo root, not wherever the .exe itself lives.", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+			SAFERELEASE(vertexShaderBlob);
+			return;
 		}
 		fseek(file, 0, SEEK_END);
 		long len = ftell(file) / sizeof(ui32);
@@ -428,8 +507,8 @@ void D3D11Renderer::CreateShader()
 
 		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
 		hlslCompiler.set_hlsl_options(options);
+		RemapVulkanShiftedBindingsToHlsl(hlslCompiler);
 		std::string pixelShaderHLSLSource = hlslCompiler.compile();
-		printf(pixelShaderHLSLSource.c_str());
 
 		D3D_SHADER_MACRO defines[] =
 		{
@@ -439,50 +518,26 @@ void D3D11Renderer::CreateShader()
 		HRESULT res = D3DCompile(pixelShaderHLSLSource.c_str(), pixelShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &pixelShaderBlob, &errorBlob);
 		if (FAILED(res))
 		{
-			auto error = (char*)errorBlob->GetBufferPointer();
-			errorBlob->Release();
-			printf(error);
+			// See the vertex shader block above - falling through here left pixelShaderBlob
+			// null, guaranteeing a later crash instead of a diagnosable failure.
+			if (errorBlob)
+			{
+				MessageBoxA(NULL, static_cast<char*>(errorBlob->GetBufferPointer()), "Pixel shader compile failed", MB_OK | MB_ICONEXCLAMATION);
+				errorBlob->Release();
+			}
+			SAFERELEASE(vertexShaderBlob);
+			return;
 		}
-		printf("oooh yeah");
 	}
-	{
-		FILE* file = fopen("./bin/data/shd/pixelSDFDefault.spirv", "rb");
-		if (file == nullptr)
-		{
-			throw std::string("SDFPixel shader now found");
-		}
-		fseek(file, 0, SEEK_END);
-		long len = ftell(file) / sizeof(ui32);
-		rewind(file);
-		std::vector<ui32> spirv(len);
-		if (fread(spirv.data(), sizeof(ui32), len, file) != size_t(len))
-			spirv.clear();
-		fclose(file);
-		spirv_cross::Parser parser(std::move(spirv));
-		parser.parse();
-		spirv_cross::CompilerHLSL::Options options;
-		options.shader_model = 50;
+	// pixelSDFDefault.hlsl is never actually bound anywhere (the only reference to
+	// pixelSDFShader in Render() is commented out) - matches VulkanRenderer's CreateShader(),
+	// which never loads it either. Not compiled here either: unlike bsdfPixel.hlsl, its
+	// g_texture/textureSampler have no explicit register() declarations, so dxc's implicit
+	// binding assignment (before res/CMakeLists.txt's -fvk-t-shift/-fvk-s-shift are even applied)
+	// produces a SPIR-V binding SPIRV-Cross can't turn back into a valid HLSL register - a
+	// pre-existing gap in that shader asset, not something worth fixing for a shader nothing
+	// draws with.
 
-		spirv_cross::CompilerHLSL hlslCompiler(parser.get_parsed_ir());
-		hlslCompiler.set_hlsl_options(options);
-		std::string pixelSDFShaderHLSLSource = hlslCompiler.compile();
-		printf(pixelSDFShaderHLSLSource.c_str());
-
-		D3D_SHADER_MACRO defines[] =
-		{
-			NULL, NULL
-		};
-		ID3DBlob* errorBlob = nullptr;
-		HRESULT res = D3DCompile(pixelSDFShaderHLSLSource.c_str(), pixelSDFShaderHLSLSource.length(), nullptr, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", "ps_5_0", D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3, NULL, &pixelSDFShaderBlob, &errorBlob);
-		if (FAILED(res))
-		{
-			auto error = (char*)errorBlob->GetBufferPointer();
-			errorBlob->Release();
-			printf(error);
-		}
-		printf("oooh yeah");
-	}
-	
 	//Create a Vertex Shader from blob
 	if (FAILED(device->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), nullptr, &vertexShader)))
 	{
@@ -493,12 +548,6 @@ void D3D11Renderer::CreateShader()
 	if (FAILED(device->CreatePixelShader(pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize(), nullptr, &pixelShader)))
 	{
 		MessageBoxA(NULL, "Could not create pixel shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
-		return;
-	}
-	//Create a Pixel Shader from blob
-	if (FAILED(device->CreatePixelShader(pixelSDFShaderBlob->GetBufferPointer(), pixelSDFShaderBlob->GetBufferSize(), nullptr, &pixelSDFShader)))
-	{
-		MessageBoxA(NULL, "Could not create pixel SDF shader", "ERROR", MB_OK | MB_ICONEXCLAMATION);
 		return;
 	}
 	//Create Input Elements for the vertex Shader
@@ -734,7 +783,26 @@ void D3D11Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, Buffe
 		//	context->PSSetShaderResources(0, 1, &renderer->texture);
 		//}
 		//context->PSSetShader(pixelSDFShader, nullptr, 0);
-	context->PSSetShaderResources(0, static_cast<ui32>(textureViews.size()), textureViews.data());
+	// Was textureViews.size() - for a draw with no material (see meshsystem.h: UseTexture() is
+	// only called when the MeshRenderer actually has one), textureViews had just been cleared to
+	// empty by the previous draw's cleanup below, so this bound zero resources. D3D11 treats
+	// PSSetShaderResources(slot, 0, ...) as a no-op, not an unbind - it silently left whatever
+	// the PREVIOUS draw call's textures were still bound, so an unmaterialed object rendered
+	// wearing the last-drawn material's textures instead of the intended plain/untextured look.
+	// Confirmed directly: the physics demo's floor/boxes (no material) rendered "textured" with
+	// the BoomBox's own textures leaking over from the draw call right before them in the same
+	// frame - and only on this backend, since D3D12Renderer/VulkanRenderer both write a full,
+	// fresh set of texture bindings (falling back to a default texture) on every single draw
+	// regardless of whether UseTexture() was called. Binding a fixed 6 slots (matching
+	// bsdfPixel.hlsl's t0-t5) rather than textureViews' current size, padded below with
+	// defaultTextureView rather than null (see its declaration), reproduces that same
+	// per-draw-fresh behavior here.
+	ID3D11ShaderResourceView* defaultSrv = srvPool.Get(defaultTextureView);
+	while (textureViews.size() < 6)
+	{
+		textureViews.push_back(defaultSrv);
+	}
+	context->PSSetShaderResources(0, 6, textureViews.data());
 	ID3D11SamplerState* const modelSamplers[] =
 	{
 		defaultSampler,
@@ -750,7 +818,11 @@ void D3D11Renderer::Render(Mat4x4 transformMat, BufferHandle vertexBuffer, Buffe
 	context->OMSetBlendState(blendState, blendFactor, 0xffffffff);
 	//Draw the object with the amount indices the object has
 	context->DrawIndexed(indexCount, 0, 0);
-	textureViews.clear();
+	// Reset to the default texture rather than clear() (which would shrink back to empty,
+	// reintroducing the bug this whole block exists to fix - see above) so the *next* draw call,
+	// even one with no material at all, still binds 6 explicit default-texture views instead of
+	// leaking this draw's bindings forward.
+	std::fill(textureViews.begin(), textureViews.end(), defaultSrv);
 }
 void D3D11Renderer::SetActiveCamera(Vec3 eye, Mat4x4 viewProj)
 {
@@ -834,11 +906,12 @@ void D3D11Renderer::ReleaseTexture(TextureHandle& texture)
 
 void D3D11Renderer::UseTexture(ui32 slot, ShaderResourceViewHandle view)
 {
+	ID3D11ShaderResourceView* defaultSrv = srvPool.Get(defaultTextureView);
 	while (slot >= textureViews.size())
 	{
-		textureViews.push_back(nullptr);
+		textureViews.push_back(defaultSrv);
 	}
-	textureViews[slot] = view.IsValid() ? srvPool.Get(view) : nullptr;
+	textureViews[slot] = view.IsValid() ? srvPool.Get(view) : defaultSrv;
 }
 
 ShaderResourceViewHandle D3D11Renderer::CreateTextureSRV(TextureHandle texture, TextureFormat format)

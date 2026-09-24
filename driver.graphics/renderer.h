@@ -83,6 +83,16 @@ namespace DUPLEX_NS_GRAPHICS
 		virtual void ImGuiNewFrame(SDL_Window* window) = 0;
 		virtual void ImGuiRenderDrawData() = 0;
 
+		// Current backbuffer size (kept up to date by Init()/Resize()) - lets callers outside
+		// this class (e.g. camerasystem.h, which needs the real aspect ratio to build a correct
+		// projection matrix) see it without needing their own copy of it. Previously there was
+		// no accessor at all, which is exactly why camerasystem.h hardcoded a 16:9 aspect ratio
+		// instead of computing the real one - confirmed as the actual cause of a report that
+		// resizing the window didn't change what was rendered: the swapchain itself did resize
+		// correctly, but the camera's projection never reflected it.
+		ui32 GetWidth() const { return width; }
+		ui32 GetHeight() const { return height; }
+
 	protected:
 		ui32 PixelSizeFromTextureFormat(TextureFormat format);
 	};

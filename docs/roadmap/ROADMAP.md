@@ -131,7 +131,7 @@ check instead of a checkbox exercise after everything else is done.
 | 14 | Importing OBJ/glTF/GLB/USD/STL | — |
 | 15 | Editor becomes a real glTF scene editor | expanded |
 | 16 | In-editor profiler / debug overlay | new |
-| 17 | D3D12: a real backend | — |
+| 17 | D3D12: a real backend | done 2026-09-23 |
 | 18 | Job/task system | new |
 | 19 | Deferred + forward hybrid rendering architecture | — |
 | 20 | Lighting: point/area/directional/spot lights | new |
@@ -165,19 +165,19 @@ check instead of a checkbox exercise after everything else is done.
 | 48 | Export / publish / bundle | — |
 | 49 | Sample project: CMake-generated showcase from open-source assets | new |
 
-## One thing not on the list, found while researching it (unchanged from before)
+## One thing not on the list, found while researching it (resolved 2026-09-23 — see Phase 17)
 
-**`driver.d3d12` is currently a scaffold, not a working renderer.** Every method in
-[d3d12renderer.cpp](../../driver.d3d12/d3d12renderer.cpp) is a stub (`Init` unconditionally
-`return false`s, `Render`/`BeginScene`/etc. are empty bodies). That matters because several
-phases below (raytracing, variable rate shading, and to a lesser extent upscaling) are APIs
-D3D11 structurally cannot expose (no DXR, no VRS caps, no mesh shaders) — on Windows they need
-D3D12 specifically. Vulkan already has all the relevant extensions on both Windows and Linux.
+**`driver.d3d12` used to be a scaffold, not a working renderer** — every method was a stub. This
+mattered because several phases below (raytracing, variable rate shading, and to a lesser extent
+upscaling) are APIs D3D11 structurally cannot expose (no DXR, no VRS caps, no mesh shaders) — on
+Windows they need D3D12 specifically. Vulkan already has all the relevant extensions on both
+Windows and Linux.
 
 Rather than block every advanced-rendering phase on a full D3D12 implementation, the plan below
-targets **Vulkan as the first-class backend for every new rendering feature**, with D3D12 as an
-explicit follow-up per feature once a real D3D12 backend exists (Phase 17). D3D11 keeps working
-for everything that doesn't need the newer hardware capabilities, and gracefully lacks the rest
+still targets **Vulkan as the first-class backend for every new rendering feature**, with D3D12
+as an explicit follow-up per feature (this is unchanged even now that Phase 17 is done — D3D12
+existing doesn't mean later phases should build against it first). D3D11 keeps working for
+everything that doesn't need the newer hardware capabilities, and gracefully lacks the rest
 (capability-checked, not silently broken).
 
 ## Feature toggles: CMake build options vs. editor/runtime settings
@@ -459,21 +459,211 @@ equivalents), draw-call/triangle counters, a log panel (Phase 10's output), basi
 
 ---
 
-## Phase 17 — D3D12: a real backend, not a scaffold
+## Phase 17 — D3D12: a real backend, not a scaffold (done, verified 2026-09-23)
 
 **Depends on:** nothing structurally, but gates the D3D12 leg of Phases 29 (raytracing), 32
 (VRS), and partly 36 (upscaling) — see "One thing not on the list" above.
 
-**Scope:** bring `driver.d3d12` to the same feature level `driver.d3d` (D3D11) and
+**Scope:** brought `driver.d3d12` to the same feature level `driver.d3d` (D3D11) and
 `driver.vulkan` already reached — device/swapchain/pipeline/descriptor-heap setup, the same
-BSDF/PBR shader pipeline the other two backends run, ImGui wired in (currently no-op-stubbed per
-Phase 7's own notes). No new engine-facing features, just parity.
+BSDF/PBR shader pipeline the other two backends run, ImGui wired in. No new engine-facing
+features, just parity. Device/swapchain/RTV/DSV setup follows D3D11's shape; frame
+synchronization (per-frame command allocators, a fence, `MAX_DRAWS_PER_FRAME`-budgeted per-draw
+constant/descriptor slices) follows Vulkan's shape instead, since D3D12 — like Vulkan and unlike
+D3D11's immediate context — needs the caller to manage CPU/GPU overlap explicitly. Root
+signature: two root CBVs (b0/b1) plus an SRV descriptor table (t0-t5) and two static samplers
+(s0/s1, so no sampler heap is needed at all). Verified by actually running `DuplexEngine.exe`
+with a `DUPLEX_RENDERER=d3d12` opt-in env var (added to `engine.client/client.cpp`, default
+stays D3D11) and screenshotting the live window: BoomBox model, physics-driven box stack,
+lighting, and texture sampling (the boombox's "PLAY" button, visibly rotating frame to frame) all
+confirmed rendering correctly, matching D3D11's output.
 
-**Scope note:** can't be verified end-to-end in the current dev environment — no Windows/MSVC
-toolchain available here. Whoever picks this up should expect to need a Windows box or CI
-runner to validate it.
+**Two real, pre-existing bugs found and fixed along the way — not scoped to D3D12 alone, since
+neither backend had ever actually been *run* on Windows before this (only compiled; Phase 9 was
+verified on Linux only):**
+- **Both D3D11 and D3D12's shared shader cross-compile path (SPIRV-Cross → HLSL) was completely
+  broken.** `res/CMakeLists.txt` compiles the shared `.spirv` with `-fvk-t-shift 10 0 -fvk-s-shift
+  20 0`, purely so Vulkan's textures/samplers don't collide with cbuffers b0/b1 in one descriptor
+  set. SPIRV-Cross's HLSL backend preserves those shifted binding numbers verbatim as HLSL
+  register numbers unless told otherwise, which both overshoots HLSL SM5.0's 16-slot sampler
+  limit (`s20` doesn't exist — a hard `D3DCompile` error, confirmed directly) and disagrees with
+  where each renderer actually binds resources (t0../s0..). Fixed with a small
+  `RemapVulkanShiftedBindingsToHlsl()` helper (duplicated in both `d3d11renderer.cpp` and
+  `d3d12renderer.cpp`, matching those files' existing non-shared-code convention) that walks
+  `get_shader_resources()` and calls `add_hlsl_resource_binding()` per resource to undo the
+  shift — the nonobvious part being that the remap has to be keyed with `.stage =
+  compiler.get_execution_model()` explicitly, since it defaults to `ExecutionModelMax` and the
+  lookup uses the compiler's real stage, so an unset `.stage` silently never matches. D3D11 was
+  also missing a `return` after a failed `D3DCompile`, so the pre-fix failure crashed instead of
+  failing cleanly — fixed alongside. `pixelSDFDefault.hlsl` (dead code — never bound by any
+  backend, confirmed by grep) has its own separate, unrelated register-binding gap (no explicit
+  `register()` declarations at all) and was simply dropped from D3D11's `CreateShader()` instead
+  of chased, matching Vulkan's reference behavior of never loading it either.
+- **A real D3D12-specific bug**, found via GPU-based validation after the above fix still left
+  D3D12 hanging (`DXGI_ERROR_DEVICE_HUNG`/TDR) a few frames in: `engine.core`'s `Texture2D`
+  (`texture2d.cpp`, shared code) creates a texture, creates its SRV, then immediately releases
+  the texture — relying on `ID3D11ShaderResourceView` automatically holding a COM reference to
+  its source resource, which D3D11 does but D3D12 descriptors do not (a D3D12 descriptor is just
+  metadata written into a heap slot; releasing the app's only reference actually destroys the
+  resource out from under it). Fixed entirely inside `D3D12Renderer` rather than touching the
+  shared `texture2d.cpp` lifetime contract: `CreateTextureSRV`/`CreateCubemapSRV` now take an
+  explicit extra `AddRef()` on the resource, released by `ReleaseTextureSRV` — reproducing
+  D3D11's real lifetime semantics locally. **Confirmed Vulkan has the identical bug** (see the
+  same-day Vulkan verification pass below) — flagged here, then actually fixed there.
+- Separately, unrelated to shaders: the top-level `CMakeLists.txt` never disabled Jolt's own
+  `JPH_USE_DX12`/`JPH_USE_VK`/`JPH_USE_MTL`/`JPH_USE_CPU_COMPUTE` options (all default `ON` in
+  Jolt's `Build/CMakeLists.txt`), which pulled in an entirely unused experimental GPU-compute
+  (hair simulation) module with its own shader compile step and its own `find_package(Vulkan)`
+  call. This broke the Windows build outright — both locally (a warning-as-error against the
+  newer Windows SDK, plus a broken relative `-I` path in Jolt's own dxc invocation) and in CI
+  (the bogus `VULKAN_SDK/include` path GitHub Actions hit). Fixed by forcing all four flags `OFF`
+  in the top-level `CMakeLists.txt`, matching the existing `CACHE BOOL "" FORCE` pattern already
+  used for `USE_AVX`/etc.
 
-**Where it lives:** `driver.d3d12/` (already exists as the scaffold to build out).
+**Where it lives:** `driver.d3d12/` (`d3d12renderer.h`/`.cpp`), `driver.d3d/d3d11renderer.cpp`
+(the shared shader-binding-remap fix), `engine.imgui/CMakeLists.txt` (added the
+`imgui_impl_dx12` backend sources), `engine.client/client.cpp` (the `DUPLEX_RENDERER=d3d12`
+opt-in used to verify it).
+
+### Same-day follow-up: Vulkan verified on Windows too, two more real bugs found and fixed
+
+Kay asked for `driver.vulkan` to be verified on Windows as well (it had the same problem as
+D3D11/D3D12 going in: compiled, never actually run). Added a `DUPLEX_RENDERER=vulkan` opt-in
+alongside the `d3d12` one (both read before `window.Init()` now, since Vulkan needs
+`SDL_WINDOW_VULKAN` set at window-creation time, not after). Two more real, pre-existing bugs
+found, both root-caused by tracing exactly where in `Init()`/the render loop things went wrong
+rather than guessing:
+
+- **Dangling pointers to loop/if-block-scoped locals in `CreateLogicalDevice()` and
+  `CreateSwapchain()`.** `CreateSwapchain()`'s `VkSwapchainCreateInfoKHR::pQueueFamilyIndices`
+  was set to point at a `ui32 queueFamiliyIndices[]` array declared *inside* the `if` block that
+  sets it, which goes out of scope before `vkCreateSwapchainKHR` — the actual reader — runs later
+  in the same function. On hardware where the graphics and present queue families genuinely
+  differ (this machine's RTX 3090: graphics family 0, present family 2 — exercising a branch that
+  apparently never got tested before), this produced exactly the symptom the Vulkan validation
+  layer flagged: garbage queue family index values reaching the driver, then a crash shortly
+  after. `CreateLogicalDevice()`'s `VkDeviceQueueCreateInfo::pQueuePriorities` had the identical
+  shape (pointing at a `float queuePriority` re-declared fresh each loop iteration) - fixed
+  alongside even though it happened not to be the one causing visible symptoms this time, since
+  it's the same latent bug.
+- **The Vulkan pipeline's vertex input state was missing `bitTangent` (location 4).** A comment
+  here claimed DXC strips it as unused and so it didn't need a binding — contradicted directly by
+  Vulkan's own validation layer on real hardware ("Vertex shader consumes input at location 4 but
+  not provided"), which then crashed the pipeline. Fixed by adding the location-4 attribute,
+  matching D3D11Renderer/D3D12Renderer's input layouts, which both already included it (the
+  comment's claim was simply wrong, not something that used to be true and later changed).
+- **Confirmed the texture-lifetime bug flagged (but not fixed) under Phase 17 above.**
+  `VulkanImageView` (a `VkImageView`) held no reference to its source `VkImage` either, so
+  `texture2d.cpp`'s create-SRV-then-immediately-release-the-texture pattern destroyed the image -
+  and freed its VMA-managed memory - while views still pointed at it; segfaulted reliably a few
+  texture loads after `Init()` returned. Vulkan has no automatic COM-style refcounting to lean on
+  the way the D3D12 fix did, so this one uses a `std::shared_ptr<void>` whose deleter calls
+  `vmaDestroyImage`, copied into both the texture pool entry and every `VulkanImageView` created
+  from it - the image is destroyed once the last copy (in either pool) goes away, regardless of
+  release order. One real ordering subtlety this introduced: that deleter captures the
+  `VmaAllocator` by value, so every pool holding a copy of the `lifetime` shared_ptr must be
+  drained *before* `vmaDestroyAllocator()` runs in `Shutdown()` - not left to whenever
+  `VulkanRenderer`'s own implicit destructor happens to run (well after `Shutdown()` returns,
+  too late). `Shutdown()` now explicitly resets both pools before destroying the allocator.
+
+**Also fixed while in this code, same root cause across all three backends:** `CreateShader()`
+(D3D11, D3D12) and `CreateShaderModuleFromFile()` (Vulkan) all `throw std::string(...)` on a
+missing/unreadable shader file, and nothing anywhere catches it — an entirely ordinary,
+easy-to-hit mistake (running the built .exe with the wrong working directory - e.g. double-
+clicking it in Explorer, which sets the working directory to the exe's own folder, not the repo
+root the `./bin/data/shd/...` paths assume) crashed the process silently, with no error dialog
+and no diagnosable message. Confirmed directly: this is exactly what a report of "a window opens
+and closes immediately" turned out to be. Fixed by converting these to the same
+`MessageBoxA`(Windows)/`fprintf(stderr, ...)`(Vulkan, which also builds on Linux) + clean-return
+convention already used everywhere else in these files, with a message that says outright what's
+wrong and how to fix it. Other, less commonly-hit `throw std::string(...)` sites earlier in
+`VulkanRenderer::Init()` (missing validation layer, no supported physical device, surface
+creation failure) were left as-is - genuine environment/driver problems, not the "wrong working
+directory" failure mode actually reported, and not something this pass went looking for.
+
+**Where it lives:** `driver.vulkan/vulkanrenderer.cpp`/`.h`, `driver.d3d/d3d11renderer.cpp` and
+`driver.d3d12/d3d12renderer.cpp` (the shader-file-error-handling fix), `engine.client/client.cpp`
+(the `DUPLEX_RENDERER=vulkan` opt-in).
+
+### Second same-day follow-up: "resizing does nothing" and "Vulkan renders upside down"
+
+Two more reports, both reproduced and fixed:
+
+- **Vulkan rendered every frame upside down.** `camerasystem.h` builds the projection matrix via
+  `glm::perspective`, shared unmodified across all three backends - GLM follows OpenGL's clip-
+  space convention (Y+ up), which happens to already match D3D's, but not Vulkan's (Y+ down by
+  default). This is the well-known "Vulkan Y-flip" - confirmed directly by the fact that D3D11
+  and D3D12 rendered correctly with the exact same shared camera math, and only Vulkan didn't.
+  Fixed entirely inside `VulkanRenderer::BeginScene()` with a negative-height viewport (core
+  since Vulkan 1.1, no extension needed at the `VK_API_VERSION_1_2` this project already
+  targets) - no shared-code changes. **`frontFace` needed no change to match** - see the third
+  same-day follow-up below for why an initial attempt to also flip it turned out to be wrong.
+- **Resizing the window didn't change what was rendered.** Two separate things were actually
+  true here, and it's worth being precise about which is which: the swapchain/backbuffer itself
+  *did* resize correctly on all three backends (verified directly - both a programmatic resize
+  and a real interactive drag-resize, on D3D11, D3D12, and Vulkan, all correctly filled the new
+  window size with no stretching or black bars, matching Kay's report about content not visually
+  updating mid-drag as expected default behavior for a plain SDL app, not a bug). What was
+  actually broken: `camerasystem.h`'s projection matrix used a **hardcoded 16:9 aspect ratio**
+  (`1.7777f`), completely independent of the window's actual size - and structurally had no way
+  to be anything else, because `Renderer` (`driver.graphics/renderer.h`) exposed no public
+  accessor for its own current width/height at all. So the backbuffer resized, but the camera's
+  framing never reflected it - which is a very reasonable thing to describe as "resizing does
+  nothing." Fixed by adding `Renderer::GetWidth()`/`GetHeight()` (backed by the `width`/`height`
+  members every backend's `Init()`/`Resize()` already keeps current) and computing the real
+  aspect ratio in `camerasystem.h` from those. Verified: resizing to a window shape far from
+  16:9 (an extreme tall/narrow window) now visibly changes the camera's framing to match, instead
+  of staying pinned to the old aspect.
+
+**Where it lives:** `driver.vulkan/vulkanrenderer.cpp` (viewport + winding fix),
+`driver.graphics/renderer.h` (`GetWidth()`/`GetHeight()`), `engine.core/ecs/systems/
+camerasystem.h` (real aspect ratio).
+
+### Third same-day follow-up: side-by-side comparison, "D3D12/Vulkan boxes are grey but D3D11's are textured", "Vulkan has flipped culling"
+
+Kay asked for all three backends to be launched together and screenshotted at the same moment
+for a fair comparison (earlier screenshots in this document were taken at different times, which
+matters here: the demo's BoomBox rotates and its physics box stack keeps falling/settling on
+`Time::deltaTime`, both independent per-process clocks - confirmed by launching two instances of
+the *same* backend side by side and seeing them already drift apart by a small amount). Kay then
+directly spotted two real, genuine cross-backend discrepancies in the comparison - both
+reproduced and fixed:
+
+- **D3D11 showed the physics demo's floor/boxes (no material - see meshsystem.h) wearing the
+  BoomBox's own textures; D3D12 and Vulkan showed them a flat neutral color.** Root cause:
+  `meshsystem.h` only calls `UseTexture()` when a `MeshRenderer` actually has a material, so an
+  unmaterialed draw call arrives with no texture bindings set at all for that specific draw.
+  `D3D11Renderer::Render()` bound `textureViews.size()` resources - which was 0, since the
+  previous draw's cleanup had cleared the vector - and `PSSetShaderResources(slot, 0, ...)` is a
+  D3D11 no-op, not an unbind, so whatever the *previous* draw call's textures were stayed bound.
+  Confirmed directly: the floor/boxes rendered wearing the BoomBox's own textures, leaked forward
+  from the draw call right before them in the same frame. D3D12Renderer/VulkanRenderer don't have
+  this bug because both write a full, fresh set of bindings (falling back to a default texture)
+  on every single draw regardless of whether `UseTexture()` was called that frame - D3D11 had no
+  equivalent default-texture fallback at all. Fixed by giving `D3D11Renderer` the same
+  `defaultTextureHandle`/`defaultTextureView` (1x1 white) D3D12Renderer/VulkanRenderer already
+  had, always binding a fixed 6 slots (matching `bsdfPixel.hlsl`'s t0-t5) padded with that default
+  rather than `textureViews`' current size, and resetting to the default (not clearing to empty)
+  after each draw so the next one - even a materialless one - can't inherit stale bindings.
+- **Vulkan showed the wrong face of some geometry** (concretely: the BoomBox model's handle
+  rendered with a grille-patterned surface that D3D11/D3D12 both render smooth) **- the
+  `VK_FRONT_FACE_CLOCKWISE` compensation from the upside-down fix above was itself wrong.**
+  Worth recording precisely, since the reasoning that produced it was plausible and is a genuinely
+  easy mistake to make twice: it's tempting to reason that a negative-height viewport must flip
+  the winding the rasterizer perceives, and so `frontFace`/`cullMode` need to compensate - but
+  that's only true relative to *Vulkan's own prior, independently-correct-for-Vulkan's-default-
+  convention* setting. Here, Vulkan's `frontFace` was never independently verified correct for
+  Vulkan's own default convention - it was copied from D3D11's value specifically *to match
+  D3D11's rendering*, and the whole scene was upside down at the time anyway, which would have
+  masked a culling problem underneath a more obvious one. Once the viewport flip makes Vulkan's
+  NDC-to-screen mapping match D3D11's exactly, the two pipelines' winding computation becomes
+  equivalent too - so the correct move was to leave `frontFace` matching D3D11's value unchanged,
+  not flip it. Confirmed empirically (not just re-derived on paper a second time, given the first
+  derivation's failure): reverting to `VK_FRONT_FACE_COUNTER_CLOCKWISE` fixed the artifact,
+  screenshots compared directly against D3D11/D3D12 side by side.
+
+**Where it lives:** `driver.d3d/d3d11renderer.h`/`.cpp` (default texture),
+`driver.vulkan/vulkanrenderer.cpp` (`frontFace` correction).
 
 ---
 
